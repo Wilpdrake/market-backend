@@ -1,12 +1,44 @@
 [project]
 name = "market-backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "Production-ready modular market microservice"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "black>=26.5.1",
-    "fastapi>=0.139.2",
-    "ruff>=0.15.22",
-    "uvicorn>=0.51.0",
+    "alembic>=1.16,<2",
+    "asyncpg>=0.30,<1",
+    "dishka>=1.7,<2",
+    "email-validator>=2.2,<3",
+    "fastapi>=0.115,<1",
+    "pwdlib[argon2]>=0.2,<1",
+    "pydantic-settings>=2.10,<3",
+    "pyjwt>=2.10,<3",
+    "sqlalchemy[asyncio]>=2.0,<3",
+    "uvicorn[standard]>=0.34,<1",
 ]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28,<1",
+    "mypy>=1.15,<2",
+    "pytest>=8.3,<9",
+    "pytest-asyncio>=0.26,<1",
+    "ruff>=0.11,<1",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
