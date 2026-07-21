@@ -85,5 +85,5 @@ async def delete_user(
     actor = await _actor(authorization, auth)
     if actor.id != user_id and not actor.is_superuser:
         raise PermissionDeniedError("Access denied")
-    await service.delete(user_id)
+    await service.delete(user_id, actor=actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

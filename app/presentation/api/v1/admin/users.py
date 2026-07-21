@@ -1,0 +1,123 @@
+from uuid import UUID
+
+from dishka.integrations.fastapi import FromDishka, inject
+from fastapi import APIRouter, Query, Response, status
+
+from app.application.users.dto import CreateUser, UpdateUser
+from app.application.users.exceptions import PermissionDeniedError
+from app.application.users.services import AuthService, UserService
+from app.domain.users.entities import User
+from app.presentation.api.v1.admin.dependencies import current_admin
+from app.presentation.api.v1.admin.schemas import (
+    AdminUserCreateRequest,
+    AdminUserResponse,
+    AdminUserUpdateRequest,
+)
+from app.presentation.api.v1.auth import AuthorizationHeader
+
+router = APIRouter(prefix="/users")
+
+
+@router.get("", response_model=list[AdminUserResponse])
+@inject
+async def list_users(
+    authorization: AuthorizationHeader,
+    auth: FromDishka[AuthService],
+    service: FromDishka[UserService],
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=100),
+) -> list[User]:
+    await current_admin(authorization, auth)
+    return await service.list(offset=offset, limit=limit)
+
+
+@router.post("", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED)
+@inject
+async def create_user(
+    data: AdminUserCreateRequest,
+    authorization: AuthorizationHeader,
+    auth: FromDishka[AuthService],
+    service: FromDishka[UserService],
+) -> User:
+    actor = await current_admin(authorization, auth)
+    return await service.create(
+        CreateUser(
+            email=str(data.email),
+            password=data.password,
+            phone=data.contact_number,
+            name=data.name,
+            surname=data.surname,
+            patronymic=data.patronymic,
+            telegram_username=data.telegram_username,
+            comment=data.comment,
+            avatar_image=data.avatar_image,
+            header_image=data.header_image,
+            is_superuser=data.role == "admin",
+            created_by=actor.id,
+        )
+    )
+
+
+@router.get("/{user_id}", response_model=AdminUserResponse)
+@inject
+async def get_user(
+    user_id: UUID,
+    authorization: AuthorizationHeader,
+    auth: FromDishka[AuthService],
+    service: FromDishka[UserService],
+) -> User:
+    await current_admin(authorization, auth)
+    return await service.get(user_id)
+
+
+@router.patch("/{user_id}", response_model=AdminUserResponse)
+@inject
+async def update_user(
+    user_id: UUID,
+    data: AdminUserUpdateRequest,
+    authorization: AuthorizationHeader,
+    auth: FromDishka[AuthService],
+    service: FromDishka[UserService],
+) -> User:
+    actor = await current_admin(authorization, auth)
+    if actor.id == user_id and data.role == "user":
+        raise PermissionDeniedError("An administrator cannot remove their own role")
+    return await service.update(
+        user_id,
+        UpdateUser(
+            email=str(data.email) if data.email else None,
+            phone=data.contact_number,
+            is_active=data.is_active,
+            name=data.name,
+            surname=data.surname,
+            patronymic=data.patronymic,
+            telegram_username=data.telegram_username,
+            comment=data.comment,
+            avatar_image=data.avatar_image,
+            header_image=data.header_image,
+            is_superuser=None if data.role is None else data.role == "admin",
+            password=data.password,
+            clear_fields=frozenset(
+                {
+                    "phone" if name == "contact_number" else name
+                    for name in data.model_fields_set
+                    if getattr(data, name) is None
+                }
+            ),
+        ),
+    )
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@inject
+async def delete_user(
+    user_id: UUID,
+    authorization: AuthorizationHeader,
+    auth: FromDishka[AuthService],
+    service: FromDishka[UserService],
+) -> Response:
+    actor = await current_admin(authorization, auth)
+    if actor.id == user_id:
+        raise PermissionDeniedError("An administrator cannot delete their own account")
+    await service.delete(user_id, actor=actor)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -3,6 +3,8 @@ from collections.abc import AsyncIterator
 from dishka import AsyncContainer, Provider, Scope, make_async_container, provide
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
+from app.application.products.ports import ProductRepository
+from app.application.products.services import ProductService
 from app.application.users.ports import (
     AccessTokenService,
     PasswordHasher,
@@ -11,6 +13,7 @@ from app.application.users.ports import (
 )
 from app.application.users.services import AuthService, UserService
 from app.core.config import Settings, get_settings
+from app.infrastructure.database.product_repositories import SqlAlchemyProductRepository
 from app.infrastructure.database.repositories import SqlAlchemyUserRepository
 from app.infrastructure.notifications import LoggingVerificationNotifier
 from app.infrastructure.security.passwords import Argon2PasswordHasher
@@ -35,6 +38,10 @@ class AppProvider(Provider):
     def user_repository(self, session: AsyncSession) -> SqlAlchemyUserRepository:
         return SqlAlchemyUserRepository(session)
 
+    @provide(scope=Scope.REQUEST, provides=ProductRepository)
+    def product_repository(self, session: AsyncSession) -> SqlAlchemyProductRepository:
+        return SqlAlchemyProductRepository(session)
+
     @provide(scope=Scope.APP, provides=PasswordHasher)
     def password_hasher(self) -> Argon2PasswordHasher:
         return Argon2PasswordHasher()
@@ -52,6 +59,7 @@ class AppProvider(Provider):
 
     user_service = provide(UserService, scope=Scope.REQUEST)
     auth_service = provide(AuthService, scope=Scope.REQUEST)
+    product_service = provide(ProductService, scope=Scope.REQUEST)
 
 
 def create_container() -> AsyncContainer:

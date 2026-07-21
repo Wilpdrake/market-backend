@@ -1,0 +1,16 @@
+from typing import Protocol
+from uuid import UUID
+
+from app.domain.products.entities import Product
+
+
+class ProductRepository(Protocol):
+    async def add(self, product: Product) -> Product: ...
+
+    async def get_by_id(self, product_id: UUID) -> Product | None: ...
+
+    async def list(self, *, offset: int, limit: int) -> list[Product]: ...
+
+    async def save(self, product: Product) -> Product: ...
+
+    async def delete(self, product_id: UUID) -> None: ...

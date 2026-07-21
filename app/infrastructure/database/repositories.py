@@ -1,8 +1,10 @@
 from uuid import UUID
 
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.users.exceptions import ConflictError
 from app.domain.users.entities import User
 from app.infrastructure.database.models import UserModel
 
@@ -13,6 +15,13 @@ def _to_entity(model: UserModel) -> User:
         email=model.email,
         password_hash=model.password_hash,
         phone=model.phone,
+        name=model.name,
+        surname=model.surname,
+        patronymic=model.patronymic,
+        comment=model.comment,
+        avatar_image=model.avatar_image,
+        header_image=model.header_image,
+        created_by=model.created_by,
         telegram_id=model.telegram_id,
         telegram_username=model.telegram_username,
         is_active=model.is_active,
@@ -34,7 +43,11 @@ class SqlAlchemyUserRepository:
     async def add(self, user: User) -> User:
         model = UserModel(**self._values(user))
         self.session.add(model)
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except IntegrityError as error:
+            await self.session.rollback()
+            raise ConflictError("A user with this email already exists") from error
         await self.session.refresh(model)
         return _to_entity(model)
 
@@ -73,6 +86,13 @@ class SqlAlchemyUserRepository:
             "email": user.email,
             "password_hash": user.password_hash,
             "phone": user.phone,
+            "name": user.name,
+            "surname": user.surname,
+            "patronymic": user.patronymic,
+            "comment": user.comment,
+            "avatar_image": user.avatar_image,
+            "header_image": user.header_image,
+            "created_by": user.created_by,
             "telegram_id": user.telegram_id,
             "telegram_username": user.telegram_username,
             "is_active": user.is_active,

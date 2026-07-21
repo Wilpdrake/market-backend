@@ -1,11 +1,17 @@
+from dataclasses import replace
 from uuid import UUID
 
 import pytest
 
 from app.application.users.dto import CreateUser, UpdateUser
-from app.application.users.exceptions import ConflictError, InvalidCredentialsError
+from app.application.users.exceptions import (
+    ConflictError,
+    InvalidCredentialsError,
+    PermissionDeniedError,
+)
 from app.application.users.services import AuthService, UserService
 from app.domain.users.entities import User
+from app.presentation.api.v1.admin.dependencies import current_admin
 
 
 class InMemoryUserRepository:
@@ -98,6 +104,46 @@ async def test_email_confirmation_accepts_only_issued_token(services) -> None:
     assert repository.users[created.id].email_verification_token_hash is None
 
 
+async def test_admin_login_rejects_regular_user(services) -> None:
+    users, auth, repository, _ = services
+    regular = await users.create(
+        CreateUser(email="admin@example.com", password="a-strong-password")
+    )
+
+    with pytest.raises(InvalidCredentialsError):
+        await auth.admin_login(regular.email, "a-strong-password")
+
+    repository.users[regular.id] = replace(regular, is_superuser=True)
+    token = await auth.admin_login(regular.email, "a-strong-password")
+
+    assert token.token_type == "bearer"
+
+
+async def test_admin_dependency_rejects_regular_user_token(services) -> None:
+    users, auth, _, _ = services
+    await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
+    token = await auth.login("user@example.com", "a-strong-password")
+
+    with pytest.raises(PermissionDeniedError):
+        await current_admin(f"Bearer {token.access_token}", auth)
+
+
+async def test_administrator_cannot_delete_self_through_user_service(services) -> None:
+    users, _, repository, _ = services
+    created = await users.create(
+        CreateUser(
+            email="admin@example.com",
+            password="a-strong-password",
+            is_superuser=True,
+        )
+    )
+
+    with pytest.raises(PermissionDeniedError):
+        await users.delete(created.id, actor=created)
+
+    assert created.id in repository.users
+
+
 async def test_update_and_delete_user(services) -> None:
     users, _, repository, _ = services
     created = await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
@@ -107,6 +153,38 @@ async def test_update_and_delete_user(services) -> None:
 
     assert updated.phone == "+79990000000"
     assert updated.id not in repository.users
+
+
+async def test_changing_contact_resets_verification(services) -> None:
+    users, _, repository, _ = services
+    created = await users.create(
+        CreateUser(
+            email="old@example.com",
+            password="a-strong-password",
+            phone="+79990000000",
+        )
+    )
+    repository.users[created.id] = replace(
+        created,
+        is_email_verified=True,
+        is_phone_verified=True,
+        email_verification_token_hash="old-email-token",
+        phone_verification_token_hash="old-phone-token",
+    )
+
+    updated = await users.update(
+        created.id,
+        UpdateUser(
+            email="new@example.com",
+            clear_fields=frozenset({"phone"}),
+        ),
+    )
+
+    assert updated.is_email_verified is False
+    assert updated.is_phone_verified is False
+    assert updated.email_verification_token_hash is None
+    assert updated.phone_verification_token_hash is None
+    assert updated.phone is None
 
 
 async def test_telegram_account_is_bound_with_one_time_token(services) -> None:

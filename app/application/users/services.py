@@ -10,6 +10,7 @@ from app.application.users.exceptions import (
     InvalidCredentialsError,
     InvalidVerificationTokenError,
     NotFoundError,
+    PermissionDeniedError,
 )
 from app.application.users.ports import (
     AccessTokenService,
@@ -43,6 +44,15 @@ class UserService:
             email=email,
             password_hash=self.password_hasher.hash(data.password),
             phone=data.phone,
+            name=data.name,
+            surname=data.surname,
+            patronymic=data.patronymic,
+            telegram_username=data.telegram_username,
+            comment=data.comment,
+            avatar_image=data.avatar_image,
+            header_image=data.header_image,
+            is_superuser=data.is_superuser,
+            created_by=data.created_by,
         )
         return await self.repository.add(user)
 
@@ -55,22 +65,84 @@ class UserService:
     async def list(self, *, offset: int = 0, limit: int = 100) -> list[User]:
         return await self.repository.list(offset=offset, limit=limit)
 
+    async def get_by_email(self, email: str) -> User | None:
+        return await self.repository.get_by_email(email.strip().lower())
+
     async def update(self, user_id: UUID, data: UpdateUser) -> User:
         user = await self.get(user_id)
         email = data.email.strip().lower() if data.email is not None else user.email
         owner = await self.repository.get_by_email(email)
         if owner is not None and owner.id != user_id:
             raise ConflictError("A user with this email already exists")
+        email_changed = email != user.email
+        new_phone = None if "phone" in data.clear_fields else data.phone
+        phone_was_supplied = data.phone is not None or "phone" in data.clear_fields
+        phone_changed = phone_was_supplied and new_phone != user.phone
         updated = replace(
             user,
             email=email,
-            phone=data.phone if data.phone is not None else user.phone,
+            phone=new_phone if phone_was_supplied else user.phone,
             is_active=data.is_active if data.is_active is not None else user.is_active,
+            name=data.name if data.name is not None else user.name,
+            surname=data.surname if data.surname is not None else user.surname,
+            patronymic=(
+                None
+                if "patronymic" in data.clear_fields
+                else data.patronymic
+                if data.patronymic is not None
+                else user.patronymic
+            ),
+            telegram_username=(
+                None
+                if "telegram_username" in data.clear_fields
+                else data.telegram_username
+                if data.telegram_username is not None
+                else user.telegram_username
+            ),
+            comment=(
+                None
+                if "comment" in data.clear_fields
+                else data.comment
+                if data.comment is not None
+                else user.comment
+            ),
+            avatar_image=(
+                None
+                if "avatar_image" in data.clear_fields
+                else data.avatar_image
+                if data.avatar_image is not None
+                else user.avatar_image
+            ),
+            header_image=(
+                None
+                if "header_image" in data.clear_fields
+                else data.header_image
+                if data.header_image is not None
+                else user.header_image
+            ),
+            is_superuser=(
+                data.is_superuser if data.is_superuser is not None else user.is_superuser
+            ),
+            password_hash=(
+                self.password_hasher.hash(data.password)
+                if data.password is not None
+                else user.password_hash
+            ),
+            is_email_verified=False if email_changed else user.is_email_verified,
+            email_verification_token_hash=(
+                None if email_changed else user.email_verification_token_hash
+            ),
+            is_phone_verified=False if phone_changed else user.is_phone_verified,
+            phone_verification_token_hash=(
+                None if phone_changed else user.phone_verification_token_hash
+            ),
             updated_at=datetime.now(UTC),
         )
         return await self.repository.save(updated)
 
-    async def delete(self, user_id: UUID) -> None:
+    async def delete(self, user_id: UUID, *, actor: User | None = None) -> None:
+        if actor is not None and actor.id == user_id and actor.is_superuser:
+            raise PermissionDeniedError("An administrator cannot delete their own account")
         await self.get(user_id)
         await self.repository.delete(user_id)
 
@@ -158,6 +230,17 @@ class AuthService:
             raise InvalidCredentialsError("Invalid email or password")
         if not user.is_active:
             raise InvalidCredentialsError("User is inactive")
+        return AccessToken(access_token=self.token_service.create(user.id))
+
+    async def admin_login(self, email: str, password: str) -> AccessToken:
+        user = await self.repository.get_by_email(email.strip().lower())
+        if (
+            user is None
+            or not user.is_superuser
+            or not user.is_active
+            or not self.password_hasher.verify(password, user.password_hash)
+        ):
+            raise InvalidCredentialsError("Invalid administrator credentials")
         return AccessToken(access_token=self.token_service.create(user.id))
 
     async def get_current_user(self, token: str) -> User:
