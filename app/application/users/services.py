@@ -18,7 +18,7 @@ from app.application.users.ports import (
     UserRepository,
     VerificationNotifier,
 )
-from app.domain.users.entities import User
+from app.domain.users.entities import ADMIN_ROLES, ROLE_RANK, User, UserRole, normalize_username
 
 
 def _token_hash(token: str) -> str:
@@ -36,12 +36,22 @@ class UserService:
         self.password_hasher = password_hasher
         self.notifier = notifier
 
-    async def create(self, data: CreateUser) -> User:
+    async def create(self, data: CreateUser, *, actor: User | None = None) -> User:
         email = data.email.strip().lower()
-        if await self.repository.get_by_email(email):
+        username = self._normalize_username(data.username) if data.username is not None else None
+        if await self.repository.get_by_login(email):
             raise ConflictError("A user with this email already exists")
+        if username and await self.repository.get_by_login(username):
+            raise ConflictError("A user with this username already exists")
+        # ``is_superuser`` remains accepted for backwards-compatible internal callers. New
+        # code should pass an explicit role so owner/developer identities survive round trips.
+        role = "admin" if data.is_superuser and data.role == "user" else data.role
+        if actor is not None:
+            self._ensure_can_assign_role(actor, role)
         user = User(
             email=email,
+            username=username,
+            role=role,
             password_hash=self.password_hasher.hash(data.password),
             phone=data.phone,
             name=data.name,
@@ -51,7 +61,7 @@ class UserService:
             comment=data.comment,
             avatar_image=data.avatar_image,
             header_image=data.header_image,
-            is_superuser=data.is_superuser,
+            is_superuser=role in ADMIN_ROLES,
             created_by=data.created_by,
         )
         return await self.repository.add(user)
@@ -68,19 +78,48 @@ class UserService:
     async def get_by_email(self, email: str) -> User | None:
         return await self.repository.get_by_email(email.strip().lower())
 
-    async def update(self, user_id: UUID, data: UpdateUser) -> User:
+    async def update(
+        self,
+        user_id: UUID,
+        data: UpdateUser,
+        *,
+        actor: User | None = None,
+    ) -> User:
         user = await self.get(user_id)
+        if actor is not None and actor.id != user_id:
+            self._ensure_can_manage(actor, user)
         email = data.email.strip().lower() if data.email is not None else user.email
-        owner = await self.repository.get_by_email(email)
+        owner = await self.repository.get_by_login(email)
         if owner is not None and owner.id != user_id:
             raise ConflictError("A user with this email already exists")
+        username = (
+            None
+            if "username" in data.clear_fields
+            else self._normalize_username(data.username)
+            if data.username is not None
+            else user.username
+        )
+        username_owner = await self.repository.get_by_login(username) if username else None
+        if username_owner is not None and username_owner.id != user_id:
+            raise ConflictError("A user with this username already exists")
         email_changed = email != user.email
         new_phone = None if "phone" in data.clear_fields else data.phone
         phone_was_supplied = data.phone is not None or "phone" in data.clear_fields
         phone_changed = phone_was_supplied and new_phone != user.phone
+        role = data.role if data.role is not None else user.effective_role
+        if data.is_superuser is not None and data.role is None:
+            role = "admin" if data.is_superuser else "user"
+        privilege_change_requested = data.role is not None or data.is_superuser is not None
+        if actor is not None and privilege_change_requested:
+            if actor.id == user_id and role != user.effective_role:
+                raise PermissionDeniedError("An administrator cannot change their own role")
+            if actor.id != user_id:
+                self._ensure_can_assign_role(actor, role)
         updated = replace(
             user,
             email=email,
+            username=username,
+            role=role,
             phone=new_phone if phone_was_supplied else user.phone,
             is_active=data.is_active if data.is_active is not None else user.is_active,
             name=data.name if data.name is not None else user.name,
@@ -120,9 +159,7 @@ class UserService:
                 if data.header_image is not None
                 else user.header_image
             ),
-            is_superuser=(
-                data.is_superuser if data.is_superuser is not None else user.is_superuser
-            ),
+            is_superuser=role in ADMIN_ROLES,
             password_hash=(
                 self.password_hasher.hash(data.password)
                 if data.password is not None
@@ -141,10 +178,30 @@ class UserService:
         return await self.repository.save(updated)
 
     async def delete(self, user_id: UUID, *, actor: User | None = None) -> None:
-        if actor is not None and actor.id == user_id and actor.is_superuser:
-            raise PermissionDeniedError("An administrator cannot delete their own account")
-        await self.get(user_id)
+        target = await self.get(user_id)
+        if actor is not None:
+            if actor.id == user_id and actor.is_superuser:
+                raise PermissionDeniedError("An administrator cannot delete their own account")
+            if actor.id != user_id:
+                self._ensure_can_manage(actor, target)
         await self.repository.delete(user_id)
+
+    @staticmethod
+    def _normalize_username(value: str) -> str:
+        try:
+            return normalize_username(value)
+        except ValueError as error:
+            raise ConflictError("Invalid username") from error
+
+    @staticmethod
+    def _ensure_can_assign_role(actor: User, role: UserRole) -> None:
+        if ROLE_RANK[role] >= ROLE_RANK[actor.effective_role]:
+            raise PermissionDeniedError("Cannot assign an equal or higher role")
+
+    @staticmethod
+    def _ensure_can_manage(actor: User, target: User) -> None:
+        if ROLE_RANK[target.effective_role] >= ROLE_RANK[actor.effective_role]:
+            raise PermissionDeniedError("Cannot manage an equal or higher role")
 
     async def request_email_verification(self, user_id: UUID) -> None:
         user = await self.get(user_id)
@@ -224,16 +281,16 @@ class AuthService:
         self.password_hasher = password_hasher
         self.token_service = token_service
 
-    async def login(self, email: str, password: str) -> AccessToken:
-        user = await self.repository.get_by_email(email.strip().lower())
+    async def login(self, login: str, password: str) -> AccessToken:
+        user = await self.repository.get_by_login(login.strip().lower())
         if user is None or not self.password_hasher.verify(password, user.password_hash):
             raise InvalidCredentialsError("Invalid email or password")
         if not user.is_active:
             raise InvalidCredentialsError("User is inactive")
         return AccessToken(access_token=self.token_service.create(user.id))
 
-    async def admin_login(self, email: str, password: str) -> AccessToken:
-        user = await self.repository.get_by_email(email.strip().lower())
+    async def admin_login(self, login: str, password: str) -> AccessToken:
+        user = await self.repository.get_by_login(login.strip().lower())
         if (
             user is None
             or not user.is_superuser

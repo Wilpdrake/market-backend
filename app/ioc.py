@@ -27,7 +27,7 @@ class AppProvider(Provider):
 
     @provide(scope=Scope.APP)
     def engine(self, settings: Settings) -> AsyncEngine:
-        return create_async_engine(settings.database_url, pool_pre_ping=True)
+        return create_async_engine(settings.resolved_database_url, pool_pre_ping=True)
 
     @provide(scope=Scope.REQUEST)
     async def session(self, engine: AsyncEngine) -> AsyncIterator[AsyncSession]:

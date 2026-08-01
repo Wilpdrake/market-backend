@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.domain.users.entities import UserRole
+
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -11,8 +13,10 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
+    # The historical JSON key remains ``email`` for API compatibility, but the value may
+    # now be either an email address or the human-friendly username from deployment data.
+    email: str = Field(min_length=1, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class UpdateUserRequest(BaseModel):
@@ -25,12 +29,14 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    username: str | None
     email: EmailStr
     phone: str | None
     telegram_id: int | None
     telegram_username: str | None
     is_active: bool
     is_superuser: bool
+    role: UserRole
     is_email_verified: bool
     is_phone_verified: bool
     created_at: datetime

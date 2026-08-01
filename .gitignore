@@ -19,3 +19,4 @@ venv/
 # Coverage / tests
 htmlcov/
 .coverage
+SOME_DATA

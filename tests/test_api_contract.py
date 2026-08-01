@@ -41,6 +41,7 @@ def test_admin_api_is_exposed_in_openapi() -> None:
     assert "password" not in user_output
     assert {
         "uuid",
+        "username",
         "name",
         "surname",
         "patronymic",
@@ -51,6 +52,7 @@ def test_admin_api_is_exposed_in_openapi() -> None:
         "avatar_image",
         "header_image",
         "role",
+        "is_superuser",
         "created_by",
         "created_at",
         "updated_at",
@@ -69,3 +71,17 @@ def test_admin_api_is_exposed_in_openapi() -> None:
         "created_at",
         "updated_at",
     } == product_output.keys()
+
+
+def test_public_product_catalog_is_exposed_without_admin_prefix() -> None:
+    """The storefront must not depend on an administrator-only endpoint."""
+    with TestClient(create_app()) as client:
+        schema = client.get("/openapi.json").json()
+        paths = schema["paths"]
+
+    assert "/api/v1/products" in paths
+    assert "get" in paths["/api/v1/products"]
+    assert "/api/v1/products/{product_id}" in paths
+    public_output = schema["components"]["schemas"]["PublicProductResponse"]["properties"]
+    assert "created_by" not in public_output
+    assert "updated_by" not in public_output

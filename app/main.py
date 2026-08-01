@@ -5,7 +5,7 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.application.users.dto import CreateUser
+from app.application.users.dto import CreateUser, UpdateUser
 from app.application.users.exceptions import (
     ApplicationError,
     ConflictError,
@@ -14,9 +14,43 @@ from app.application.users.exceptions import (
     PermissionDeniedError,
 )
 from app.application.users.services import UserService
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.ioc import create_container
 from app.presentation.api.v1.router import router as v1_router
+
+
+async def _bootstrap_first_superuser(service: UserService, settings: Settings) -> None:
+    if not settings.first_superuser_email or not settings.first_superuser_password:
+        return
+
+    email = str(settings.first_superuser_email)
+    existing = await service.get_by_email(email)
+    if existing is None:
+        try:
+            await service.create(
+                CreateUser(
+                    email=email,
+                    username=settings.first_superuser_username,
+                    password=settings.first_superuser_password,
+                    role=settings.first_superuser_role,
+                    name=settings.first_superuser_name,
+                    surname=settings.first_superuser_surname,
+                )
+            )
+            return
+        except ConflictError:
+            existing = await service.get_by_email(email)
+
+    if existing is None or not existing.is_superuser:
+        raise RuntimeError("FIRST_SUPERUSER identity conflicts with a regular user")
+
+    await service.update(
+        existing.id,
+        UpdateUser(
+            username=settings.first_superuser_username,
+            role=settings.first_superuser_role,
+        ),
+    )
 
 
 def create_app() -> FastAPI:
@@ -28,26 +62,7 @@ def create_app() -> FastAPI:
         if settings.first_superuser_email and settings.first_superuser_password:
             async with container() as request_container:
                 service = await request_container.get(UserService)
-                existing = await service.get_by_email(settings.first_superuser_email)
-                if existing is None:
-                    try:
-                        await service.create(
-                            CreateUser(
-                                email=settings.first_superuser_email,
-                                password=settings.first_superuser_password,
-                                name=settings.first_superuser_name,
-                                surname=settings.first_superuser_surname,
-                                is_superuser=True,
-                            )
-                        )
-                    except ConflictError:
-                        existing = await service.get_by_email(settings.first_superuser_email)
-                        if existing is None or not existing.is_superuser:
-                            raise RuntimeError(
-                                "FIRST_SUPERUSER_EMAIL belongs to a regular user"
-                            ) from None
-                elif not existing.is_superuser:
-                    raise RuntimeError("FIRST_SUPERUSER_EMAIL belongs to a regular user")
+                await _bootstrap_first_superuser(service, settings)
         yield
         await container.close()
 

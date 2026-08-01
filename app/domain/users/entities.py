@@ -1,6 +1,30 @@
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Literal
 from uuid import UUID, uuid4
+
+# Roles are domain data, not frontend labels.  Keep this union close to the User entity so
+# HTTP schemas, services and persistence all share the same allowed values.
+UserRole = Literal["user", "moder", "admin", "developer", "owner"]
+ADMIN_ROLES: frozenset[str] = frozenset({"moder", "admin", "developer", "owner"})
+ROLE_RANK: dict[UserRole, int] = {
+    "user": 0,
+    "moder": 1,
+    "admin": 2,
+    "developer": 3,
+    "owner": 4,
+}
+# Email addresses always contain ``@``. Excluding it makes email and username disjoint
+# namespaces that PostgreSQL can enforce atomically with ordinary unique constraints.
+_USERNAME_PATTERN = re.compile(r"^[a-z0-9._+-]+$")
+
+
+def normalize_username(value: str) -> str:
+    normalized = value.strip().lower()
+    if not _USERNAME_PATTERN.fullmatch(normalized):
+        raise ValueError("Username contains unsupported characters")
+    return normalized
 
 
 @dataclass(slots=True)
@@ -9,6 +33,8 @@ class User:
     password_hash: str
     id: UUID = field(default_factory=uuid4)
     phone: str | None = None
+    username: str | None = None
+    role: UserRole = "user"
     name: str = ""
     surname: str = ""
     patronymic: str | None = None
@@ -29,5 +55,8 @@ class User:
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
-    def role(self) -> str:
-        return "admin" if self.is_superuser else "user"
+    def effective_role(self) -> UserRole:
+        """Treat legacy boolean superusers as administrators until persisted roles catch up."""
+        if self.is_superuser and ROLE_RANK[self.role] < ROLE_RANK["admin"]:
+            return "admin"
+        return self.role

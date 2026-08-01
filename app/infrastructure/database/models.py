@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Numeric, String, func
+from sqlalchemy import JSON, BigInteger, Boolean, CheckConstraint, DateTime, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,9 +11,20 @@ from app.infrastructure.database.base import Base
 
 class UserModel(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('user', 'moder', 'admin', 'developer', 'owner')",
+            name="ck_users_role",
+        ),
+        CheckConstraint(
+            "username IS NULL OR username ~ '^[a-z0-9._+-]+$'",
+            name="ck_users_username_format",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
+    username: Mapped[str | None] = mapped_column(String(64), unique=True, index=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String(100), default="")
@@ -27,6 +38,9 @@ class UserModel(Base):
     telegram_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
+    role: Mapped[str] = mapped_column(
+        String(32), default="user", server_default="user", index=True
+    )
     is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_phone_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     email_verification_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)

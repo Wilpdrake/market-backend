@@ -28,6 +28,12 @@ class InMemoryUserRepository:
     async def get_by_email(self, email: str) -> User | None:
         return next((user for user in self.users.values() if user.email == email), None)
 
+    async def get_by_login(self, login: str) -> User | None:
+        return next(
+            (user for user in self.users.values() if user.email == login or user.username == login),
+            None,
+        )
+
     async def list(self, *, offset: int, limit: int) -> list[User]:
         return list(self.users.values())[offset : offset + limit]
 
@@ -51,8 +57,11 @@ class FakeNotifier:
         self.phone_tokens.append((phone, token))
 
 
+type ServiceBundle = tuple[UserService, AuthService, InMemoryUserRepository, FakeNotifier]
+
+
 @pytest.fixture
-def services() -> tuple[UserService, AuthService, InMemoryUserRepository, FakeNotifier]:
+def services() -> ServiceBundle:
     from app.infrastructure.security.passwords import Argon2PasswordHasher
     from app.infrastructure.security.tokens import JwtTokenService
 
@@ -68,7 +77,9 @@ def services() -> tuple[UserService, AuthService, InMemoryUserRepository, FakeNo
     return users, auth, repository, notifier
 
 
-async def test_register_hashes_password_and_rejects_duplicate_email(services) -> None:
+async def test_register_hashes_password_and_rejects_duplicate_email(
+    services: ServiceBundle,
+) -> None:
     users, _, _, _ = services
 
     created = await users.create(
@@ -81,7 +92,7 @@ async def test_register_hashes_password_and_rejects_duplicate_email(services) ->
         await users.create(CreateUser(email="user@example.com", password="another-password"))
 
 
-async def test_authenticate_returns_token_for_valid_credentials(services) -> None:
+async def test_authenticate_returns_token_for_valid_credentials(services: ServiceBundle) -> None:
     users, auth, _, _ = services
     created = await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
 
@@ -92,7 +103,7 @@ async def test_authenticate_returns_token_for_valid_credentials(services) -> Non
         await auth.login("user@example.com", "wrong-password")
 
 
-async def test_email_confirmation_accepts_only_issued_token(services) -> None:
+async def test_email_confirmation_accepts_only_issued_token(services: ServiceBundle) -> None:
     users, _, repository, notifier = services
     created = await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
 
@@ -104,7 +115,7 @@ async def test_email_confirmation_accepts_only_issued_token(services) -> None:
     assert repository.users[created.id].email_verification_token_hash is None
 
 
-async def test_admin_login_rejects_regular_user(services) -> None:
+async def test_admin_login_rejects_regular_user(services: ServiceBundle) -> None:
     users, auth, repository, _ = services
     regular = await users.create(
         CreateUser(email="admin@example.com", password="a-strong-password")
@@ -119,7 +130,108 @@ async def test_admin_login_rejects_regular_user(services) -> None:
     assert token.token_type == "bearer"
 
 
-async def test_admin_dependency_rejects_regular_user_token(services) -> None:
+async def test_owner_can_sign_in_with_username_and_keeps_explicit_role(
+    services: ServiceBundle,
+) -> None:
+    users, auth, _, _ = services
+    owner = await users.create(
+        CreateUser(
+            email="owner@example.com",
+            username="owner-login",
+            password="a-strong-password",
+            role="owner",
+        )
+    )
+
+    token = await auth.login("owner-login", "a-strong-password")
+
+    assert owner.role == "owner"
+    assert owner.is_superuser is True
+    assert await auth.get_current_user(token.access_token) == owner
+
+
+async def test_login_identifiers_share_one_namespace(services: ServiceBundle) -> None:
+    users, _, _, _ = services
+
+    with pytest.raises(ConflictError):
+        await users.create(
+            CreateUser(
+                email="first@example.com",
+                username="shared@example.com",
+                password="a-strong-password",
+            )
+        )
+
+
+async def test_username_must_not_normalize_to_empty(services: ServiceBundle) -> None:
+    users, _, _, _ = services
+
+    with pytest.raises(ConflictError):
+        await users.create(
+            CreateUser(
+                email="blank@example.com",
+                username="   ",
+                password="a-strong-password",
+            )
+        )
+
+
+async def test_administrator_cannot_assign_or_manage_equal_or_higher_role(
+    services: ServiceBundle,
+) -> None:
+    users, _, _, _ = services
+    moderator = await users.create(
+        CreateUser(email="moder@example.com", password="a-strong-password", role="moder")
+    )
+    administrator = await users.create(
+        CreateUser(email="admin@example.com", password="a-strong-password", role="admin")
+    )
+    regular = await users.create(
+        CreateUser(email="user@example.com", password="a-strong-password")
+    )
+
+    with pytest.raises(PermissionDeniedError):
+        await users.create(
+            CreateUser(email="owner@example.com", password="a-strong-password", role="owner"),
+            actor=moderator,
+        )
+    with pytest.raises(PermissionDeniedError):
+        await users.delete(administrator.id, actor=moderator)
+    with pytest.raises(PermissionDeniedError):
+        await users.update(regular.id, UpdateUser(is_superuser=True), actor=moderator)
+
+
+async def test_legacy_superuser_uses_admin_rank_and_is_normalized_on_update(
+    services: ServiceBundle,
+) -> None:
+    users, _, repository, _ = services
+    moderator = await users.create(
+        CreateUser(email="moder@example.com", password="a-strong-password", role="moder")
+    )
+    owner = await users.create(
+        CreateUser(email="owner@example.com", password="a-strong-password", role="owner")
+    )
+    legacy = await users.create(
+        CreateUser(email="legacy@example.com", password="a-strong-password")
+    )
+    repository.users[legacy.id] = replace(legacy, is_superuser=True)
+
+    with pytest.raises(PermissionDeniedError):
+        await users.update(legacy.id, UpdateUser(name="Compromised"), actor=moderator)
+
+    unchanged = repository.users[legacy.id]
+    assert unchanged.name == ""
+    assert unchanged.role == "user"
+    assert unchanged.is_superuser is True
+
+    normalized = await users.update(legacy.id, UpdateUser(name="Legacy Admin"), actor=owner)
+
+    assert normalized.name == "Legacy Admin"
+    assert normalized.role == "admin"
+    assert normalized.is_superuser is True
+
+
+async def test_admin_dependency_rejects_regular_user_token(services: ServiceBundle) -> None:
     users, auth, _, _ = services
     await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
     token = await auth.login("user@example.com", "a-strong-password")
@@ -128,7 +240,9 @@ async def test_admin_dependency_rejects_regular_user_token(services) -> None:
         await current_admin(f"Bearer {token.access_token}", auth)
 
 
-async def test_administrator_cannot_delete_self_through_user_service(services) -> None:
+async def test_administrator_cannot_delete_self_through_user_service(
+    services: ServiceBundle,
+) -> None:
     users, _, repository, _ = services
     created = await users.create(
         CreateUser(
@@ -144,7 +258,16 @@ async def test_administrator_cannot_delete_self_through_user_service(services) -
     assert created.id in repository.users
 
 
-async def test_update_and_delete_user(services) -> None:
+async def test_regular_user_can_delete_their_own_account(services: ServiceBundle) -> None:
+    users, _, repository, _ = services
+    created = await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
+
+    await users.delete(created.id, actor=created)
+
+    assert created.id not in repository.users
+
+
+async def test_update_and_delete_user(services: ServiceBundle) -> None:
     users, _, repository, _ = services
     created = await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
 
@@ -155,7 +278,7 @@ async def test_update_and_delete_user(services) -> None:
     assert updated.id not in repository.users
 
 
-async def test_changing_contact_resets_verification(services) -> None:
+async def test_changing_contact_resets_verification(services: ServiceBundle) -> None:
     users, _, repository, _ = services
     created = await users.create(
         CreateUser(
@@ -187,7 +310,7 @@ async def test_changing_contact_resets_verification(services) -> None:
     assert updated.phone is None
 
 
-async def test_telegram_account_is_bound_with_one_time_token(services) -> None:
+async def test_telegram_account_is_bound_with_one_time_token(services: ServiceBundle) -> None:
     users, _, _, _ = services
     created = await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
 

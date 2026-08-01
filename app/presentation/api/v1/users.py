@@ -71,6 +71,7 @@ async def update_user(
             phone=data.phone,
             is_active=data.is_active,
         ),
+        actor=actor,
     )
 
 

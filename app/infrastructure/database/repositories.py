@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,8 @@ def _to_entity(model: UserModel) -> User:
     return User(
         id=model.id,
         email=model.email,
+        username=model.username,
+        role=model.role,  # type: ignore[arg-type]  # DB constraint/migration limits valid values.
         password_hash=model.password_hash,
         phone=model.phone,
         name=model.name,
@@ -59,6 +61,13 @@ class SqlAlchemyUserRepository:
         model = await self.session.scalar(select(UserModel).where(UserModel.email == email))
         return _to_entity(model) if model else None
 
+    async def get_by_login(self, login: str) -> User | None:
+        """Resolve either normalized email or username with one indexed query."""
+        model = await self.session.scalar(
+            select(UserModel).where(or_(UserModel.email == login, UserModel.username == login))
+        )
+        return _to_entity(model) if model else None
+
     async def list(self, *, offset: int, limit: int) -> list[User]:
         models = await self.session.scalars(
             select(UserModel).order_by(UserModel.created_at).offset(offset).limit(limit)
@@ -71,7 +80,11 @@ class SqlAlchemyUserRepository:
             raise LookupError("User not found")
         for name, value in self._values(user).items():
             setattr(model, name, value)
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except IntegrityError as error:
+            await self.session.rollback()
+            raise ConflictError("A user with this login identifier already exists") from error
         await self.session.refresh(model)
         return _to_entity(model)
 
@@ -84,6 +97,8 @@ class SqlAlchemyUserRepository:
         return {
             "id": user.id,
             "email": user.email,
+            "username": user.username,
+            "role": user.role,
             "password_hash": user.password_hash,
             "phone": user.phone,
             "name": user.name,

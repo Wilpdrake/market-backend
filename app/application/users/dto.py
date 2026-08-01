@@ -1,12 +1,16 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from app.domain.users.entities import UserRole
+
 
 @dataclass(frozen=True, slots=True)
 class CreateUser:
     email: str
     password: str
     phone: str | None = None
+    username: str | None = None
+    role: UserRole = "user"
     name: str = ""
     surname: str = ""
     patronymic: str | None = None
@@ -22,6 +26,8 @@ class CreateUser:
 class UpdateUser:
     email: str | None = None
     phone: str | None = None
+    username: str | None = None
+    role: UserRole | None = None
     is_active: bool | None = None
     name: str | None = None
     surname: str | None = None

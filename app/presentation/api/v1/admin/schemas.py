@@ -1,20 +1,22 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
+from app.domain.users.entities import UserRole
+
 
 class AdminLoginRequest(BaseModel):
-    email: EmailStr
-    password: str
+    email: str = Field(min_length=1, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class AdminUserCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     surname: str = Field(min_length=1, max_length=100)
     patronymic: str | None = Field(default=None, max_length=100)
+    username: str | None = Field(default=None, min_length=1, max_length=64)
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     password_confirmation: str = Field(min_length=8, max_length=128)
@@ -23,7 +25,7 @@ class AdminUserCreateRequest(BaseModel):
     comment: str | None = Field(default=None, max_length=2000)
     avatar_image: str | None = Field(default=None, max_length=2048)
     header_image: str | None = Field(default=None, max_length=2048)
-    role: Literal["user", "admin"] = "user"
+    role: UserRole = "user"
 
     @model_validator(mode="after")
     def passwords_match(self) -> "AdminUserCreateRequest":
@@ -36,6 +38,7 @@ class AdminUserUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     surname: str | None = Field(default=None, min_length=1, max_length=100)
     patronymic: str | None = Field(default=None, max_length=100)
+    username: str | None = Field(default=None, min_length=1, max_length=64)
     email: EmailStr | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
     password_confirmation: str | None = Field(default=None, min_length=8, max_length=128)
@@ -44,7 +47,7 @@ class AdminUserUpdateRequest(BaseModel):
     comment: str | None = Field(default=None, max_length=2000)
     avatar_image: str | None = Field(default=None, max_length=2048)
     header_image: str | None = Field(default=None, max_length=2048)
-    role: Literal["user", "admin"] | None = None
+    role: UserRole | None = None
     is_active: bool | None = None
 
     @model_validator(mode="after")
@@ -61,13 +64,15 @@ class AdminUserResponse(BaseModel):
     name: str
     surname: str
     patronymic: str | None
+    username: str | None
     email: EmailStr
     contact_number: str | None = Field(validation_alias="phone")
     telegram_username: str | None
     comment: str | None
     avatar_image: str | None
     header_image: str | None
-    role: str
+    role: UserRole
+    is_superuser: bool
     created_by: UUID | None
     is_active: bool
     is_email_verified: bool

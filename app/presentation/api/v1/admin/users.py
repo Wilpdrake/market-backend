@@ -43,6 +43,7 @@ async def create_user(
     return await service.create(
         CreateUser(
             email=str(data.email),
+            username=data.username,
             password=data.password,
             phone=data.contact_number,
             name=data.name,
@@ -52,9 +53,10 @@ async def create_user(
             comment=data.comment,
             avatar_image=data.avatar_image,
             header_image=data.header_image,
-            is_superuser=data.role == "admin",
+            role=data.role,
             created_by=actor.id,
-        )
+        ),
+        actor=actor,
     )
 
 
@@ -80,12 +82,11 @@ async def update_user(
     service: FromDishka[UserService],
 ) -> User:
     actor = await current_admin(authorization, auth)
-    if actor.id == user_id and data.role == "user":
-        raise PermissionDeniedError("An administrator cannot remove their own role")
     return await service.update(
         user_id,
         UpdateUser(
             email=str(data.email) if data.email else None,
+            username=data.username,
             phone=data.contact_number,
             is_active=data.is_active,
             name=data.name,
@@ -95,7 +96,7 @@ async def update_user(
             comment=data.comment,
             avatar_image=data.avatar_image,
             header_image=data.header_image,
-            is_superuser=None if data.role is None else data.role == "admin",
+            role=data.role,
             password=data.password,
             clear_fields=frozenset(
                 {
@@ -105,6 +106,7 @@ async def update_user(
                 }
             ),
         ),
+        actor=actor,
     )
 
 
