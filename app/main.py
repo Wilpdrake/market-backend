@@ -49,6 +49,7 @@ async def _bootstrap_first_superuser(service: UserService, settings: Settings) -
         UpdateUser(
             username=settings.first_superuser_username,
             role=settings.first_superuser_role,
+            password=settings.first_superuser_password,
         ),
     )
 

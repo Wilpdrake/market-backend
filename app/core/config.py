@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     telegram_bot_username: str = "market_bot"
     telegram_webhook_secret: str | None = None
     first_superuser_email: EmailStr | None = None
-    first_superuser_username: str | None = None
-    first_superuser_role: Literal["moder", "admin", "developer", "owner"] = "owner"
+    first_superuser_username: str | None = "wilpdrake"
+    first_superuser_role: Literal["moder", "admin", "owner", "developer"] = "developer"
     first_superuser_password: str | None = Field(default=None, min_length=8)
     first_superuser_name: str = "Admin"
     first_superuser_surname: str = "Administrator"

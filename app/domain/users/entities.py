@@ -12,8 +12,8 @@ ROLE_RANK: dict[UserRole, int] = {
     "user": 0,
     "moder": 1,
     "admin": 2,
-    "developer": 3,
-    "owner": 4,
+    "owner": 3,
+    "developer": 4,
 }
 # Email addresses always contain ``@``. Excluding it makes email and username disjoint
 # namespaces that PostgreSQL can enforce atomically with ordinary unique constraints.

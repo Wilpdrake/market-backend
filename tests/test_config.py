@@ -11,6 +11,13 @@ def test_blank_initial_admin_credentials_are_optional() -> None:
     assert settings.first_superuser_password is None
 
 
+def test_initial_developer_defaults_to_wilpdrake_and_highest_role() -> None:
+    settings = Settings()
+
+    assert settings.first_superuser_username == "wilpdrake"
+    assert settings.first_superuser_role == "developer"
+
+
 def test_initial_admin_credentials_must_be_configured_together() -> None:
     with pytest.raises(ValidationError):
         Settings(

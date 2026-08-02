@@ -10,7 +10,7 @@ from app.main import _bootstrap_first_superuser
 
 
 @pytest.mark.asyncio
-async def test_bootstrap_reconciles_existing_superuser_identity() -> None:
+async def test_bootstrap_reconciles_existing_developer_identity_and_password() -> None:
     existing = User(
         email="owner@example.com",
         username=None,
@@ -22,8 +22,6 @@ async def test_bootstrap_reconciles_existing_superuser_identity() -> None:
     service.get_by_email.return_value = existing
     settings = Settings(
         first_superuser_email="owner@example.com",
-        first_superuser_username="owner",
-        first_superuser_role="owner",
         first_superuser_password="existing-secret",
     )
 
@@ -31,5 +29,6 @@ async def test_bootstrap_reconciles_existing_superuser_identity() -> None:
 
     update = service.update.await_args
     assert update.args[0] == existing.id
-    assert update.args[1].username == "owner"
-    assert update.args[1].role == "owner"
+    assert update.args[1].username == "wilpdrake"
+    assert update.args[1].role == "developer"
+    assert update.args[1].password == "existing-secret"

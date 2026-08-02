@@ -7,23 +7,27 @@
 - Авторизация: `Authorization: Bearer <access_token>`
 - Swagger: `/docs`
 
-Административный JWT выдаётся только пользователю с ролью `admin`. Обычный пользователь
+Административный JWT выдаётся пользователям с административной ролью. `developer` является
+самой высокой ролью. Обычный пользователь
 получит `401` на `/admin/auth/token` и `403` при обращении к защищённым admin endpoints.
 
-## Создание первого администратора
+## Создание первого разработчика
 
 При первом запуске передайте переменные окружения:
 
 ```dotenv
-FIRST_SUPERUSER_EMAIL=admin@example.com
+FIRST_SUPERUSER_EMAIL=developer@example.com
+FIRST_SUPERUSER_USERNAME=wilpdrake
+FIRST_SUPERUSER_ROLE=developer
 FIRST_SUPERUSER_PASSWORD=replace-with-a-strong-password
 FIRST_SUPERUSER_NAME=Admin
 FIRST_SUPERUSER_SURNAME=Administrator
 ```
 
-Backend создаст администратора, только если пользователя с таким email ещё нет. Если email
-уже принадлежит обычному пользователю, приложение завершит запуск с ошибкой и не повысит
-его права автоматически.
+Backend создаст разработчика, если пользователя с таким email ещё нет. Для существующего
+административного пользователя bootstrap синхронизирует username, роль и пароль с текущими
+переменными окружения. Если email принадлежит обычному пользователю, приложение завершит
+запуск с ошибкой и не повысит его права автоматически.
 
 ## Авторизация
 
@@ -31,7 +35,7 @@ Backend создаст администратора, только если по�
 
 ```json
 {
-  "email": "admin@example.com",
+  "email": "wilpdrake",
   "password": "replace-with-a-strong-password"
 }
 ```

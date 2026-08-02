@@ -186,9 +186,7 @@ async def test_administrator_cannot_assign_or_manage_equal_or_higher_role(
     administrator = await users.create(
         CreateUser(email="admin@example.com", password="a-strong-password", role="admin")
     )
-    regular = await users.create(
-        CreateUser(email="user@example.com", password="a-strong-password")
-    )
+    regular = await users.create(CreateUser(email="user@example.com", password="a-strong-password"))
 
     with pytest.raises(PermissionDeniedError):
         await users.create(
@@ -199,6 +197,28 @@ async def test_administrator_cannot_assign_or_manage_equal_or_higher_role(
         await users.delete(administrator.id, actor=moderator)
     with pytest.raises(PermissionDeniedError):
         await users.update(regular.id, UpdateUser(is_superuser=True), actor=moderator)
+
+
+async def test_developer_is_the_highest_administration_role(
+    services: ServiceBundle,
+) -> None:
+    users, _, _, _ = services
+    developer = await users.create(
+        CreateUser(
+            email="developer@example.com",
+            password="a-strong-password",
+            role="developer",
+        )
+    )
+    owner = await users.create(
+        CreateUser(email="owner@example.com", password="a-strong-password", role="owner")
+    )
+
+    managed_owner = await users.update(owner.id, UpdateUser(name="Managed"), actor=developer)
+
+    assert managed_owner.name == "Managed"
+    with pytest.raises(PermissionDeniedError):
+        await users.update(developer.id, UpdateUser(name="Compromised"), actor=owner)
 
 
 async def test_legacy_superuser_uses_admin_rank_and_is_normalized_on_update(
