@@ -1,11 +1,10 @@
-from dataclasses import dataclass
 from uuid import UUID
 
-from app.domain.users.entities import UserRole
+from app.domain.users.models import UserRole
+from app.models import CommandModel
 
 
-@dataclass(frozen=True, slots=True)
-class CreateUser:
+class CreateUser(CommandModel):
     email: str
     password: str
     phone: str | None = None
@@ -22,8 +21,7 @@ class CreateUser:
     created_by: UUID | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class UpdateUser:
+class UpdateUser(CommandModel):
     email: str | None = None
     phone: str | None = None
     username: str | None = None
@@ -41,7 +39,6 @@ class UpdateUser:
     clear_fields: frozenset[str] = frozenset()
 
 
-@dataclass(frozen=True, slots=True)
-class AccessToken:
+class AccessToken(CommandModel):
     access_token: str
     token_type: str = "bearer"

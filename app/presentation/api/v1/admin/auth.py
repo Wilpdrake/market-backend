@@ -1,9 +1,9 @@
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter
 
-from app.application.users.dto import AccessToken
+from app.application.users.models import AccessToken
 from app.application.users.services import AuthService
-from app.domain.users.entities import User
+from app.domain.users.models import User
 from app.presentation.api.v1.admin.dependencies import current_admin
 from app.presentation.api.v1.admin.schemas import AdminLoginRequest, AdminUserResponse
 from app.presentation.api.v1.auth import AuthorizationHeader

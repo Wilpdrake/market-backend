@@ -1,11 +1,11 @@
-from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import UUID
 
-from app.application.products.dto import CreateProduct, UpdateProduct
+from app.application.products.models import CreateProduct, UpdateProduct
 from app.application.products.ports import ProductRepository
 from app.application.users.exceptions import NotFoundError
-from app.domain.products.entities import Product
+from app.domain.products.models import Product
+from app.models import replace_model as replace
 
 
 class ProductService:

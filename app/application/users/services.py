@@ -1,10 +1,8 @@
 import hashlib
 import secrets
-from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import UUID
 
-from app.application.users.dto import AccessToken, CreateUser, UpdateUser
 from app.application.users.exceptions import (
     ConflictError,
     InvalidCredentialsError,
@@ -12,13 +10,15 @@ from app.application.users.exceptions import (
     NotFoundError,
     PermissionDeniedError,
 )
+from app.application.users.models import AccessToken, CreateUser, UpdateUser
 from app.application.users.ports import (
     AccessTokenService,
     PasswordHasher,
     UserRepository,
     VerificationNotifier,
 )
-from app.domain.users.entities import ADMIN_ROLES, ROLE_RANK, User, UserRole, normalize_username
+from app.domain.users.models import ADMIN_ROLES, ROLE_RANK, User, UserRole, normalize_username
+from app.models import replace_model as replace
 
 
 def _token_hash(token: str) -> str:

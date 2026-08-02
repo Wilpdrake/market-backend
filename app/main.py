@@ -5,7 +5,6 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.application.users.dto import CreateUser, UpdateUser
 from app.application.users.exceptions import (
     ApplicationError,
     ConflictError,
@@ -13,6 +12,7 @@ from app.application.users.exceptions import (
     NotFoundError,
     PermissionDeniedError,
 )
+from app.application.users.models import CreateUser, UpdateUser
 from app.application.users.services import UserService
 from app.core.config import Settings, get_settings
 from app.ioc import create_container

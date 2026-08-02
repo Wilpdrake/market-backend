@@ -2,17 +2,18 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import ConfigDict, EmailStr, Field, model_validator
 
-from app.domain.users.entities import UserRole
+from app.domain.users.models import UserRole
+from app.models import ApiModel, ApiResponseModel
 
 
-class AdminLoginRequest(BaseModel):
+class AdminLoginRequest(ApiModel):
     email: str = Field(min_length=1, max_length=320)
     password: str = Field(min_length=8, max_length=128)
 
 
-class AdminUserCreateRequest(BaseModel):
+class AdminUserCreateRequest(ApiModel):
     name: str = Field(min_length=1, max_length=100)
     surname: str = Field(min_length=1, max_length=100)
     patronymic: str | None = Field(default=None, max_length=100)
@@ -34,7 +35,7 @@ class AdminUserCreateRequest(BaseModel):
         return self
 
 
-class AdminUserUpdateRequest(BaseModel):
+class AdminUserUpdateRequest(ApiModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     surname: str | None = Field(default=None, min_length=1, max_length=100)
     patronymic: str | None = Field(default=None, max_length=100)
@@ -57,8 +58,8 @@ class AdminUserUpdateRequest(BaseModel):
         return self
 
 
-class AdminUserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+class AdminUserResponse(ApiResponseModel):
+    model_config = ConfigDict(populate_by_name=True)
 
     uuid: UUID = Field(validation_alias="id")
     name: str
@@ -81,7 +82,7 @@ class AdminUserResponse(BaseModel):
     updated_at: datetime
 
 
-class ProductCreateRequest(BaseModel):
+class ProductCreateRequest(ApiModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=5000)
     images: list[str] | None = None
@@ -91,7 +92,7 @@ class ProductCreateRequest(BaseModel):
     wb_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
 
 
-class ProductUpdateRequest(BaseModel):
+class ProductUpdateRequest(ApiModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=5000)
     images: list[str] | None = None
@@ -101,8 +102,8 @@ class ProductUpdateRequest(BaseModel):
     wb_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
 
 
-class ProductResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+class ProductResponse(ApiResponseModel):
+    model_config = ConfigDict(populate_by_name=True)
 
     uuid: UUID = Field(validation_alias="id")
     title: str

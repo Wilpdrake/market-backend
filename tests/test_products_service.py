@@ -1,9 +1,9 @@
 from decimal import Decimal
 from uuid import UUID
 
-from app.application.products.dto import CreateProduct, UpdateProduct
+from app.application.products.models import CreateProduct, UpdateProduct
 from app.application.products.services import ProductService
-from app.domain.products.entities import Product
+from app.domain.products.models import Product
 
 
 class InMemoryProductRepository:

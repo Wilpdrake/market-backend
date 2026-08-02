@@ -2,8 +2,8 @@
 # Market Backend
 
 Версионированный REST API на FastAPI для пользователей и аутентификации. Проект сделан
-как модульный монолит: домен не зависит от FastAPI, PostgreSQL или Dishka, поэтому модули
-можно выделять в микросервисы только после появления реальной необходимости.
+как модульный монолит: Pydantic-модели домена не зависят от FastAPI, PostgreSQL или Dishka,
+поэтому модули можно выделять в микросервисы только после появления реальной необходимости.
 
 ## Возможности
 
@@ -21,11 +21,16 @@
 Контракт авторизации и CRUD административной панели находится в
 [`docs/admin-api.md`](docs/admin-api.md).
 
+Расположение и правила Pydantic-моделей описаны в
+[`docs/pydantic-models.md`](docs/pydantic-models.md), полная архитектура — в
+[`docs/structure.md`](docs/structure.md).
+
 ## Структура
 
 ```text
-app/domain                 бизнес-сущности
-app/application            сценарии и порты
+app/models.py              общие политики Pydantic-моделей
+app/domain                 доменные Pydantic-модели
+app/application            команды, сценарии и порты
 app/infrastructure         PostgreSQL, JWT, Argon2, уведомления
 app/presentation/api/v1    HTTP API версии v1
 app/ioc.py                 Dishka container

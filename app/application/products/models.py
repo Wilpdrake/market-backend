@@ -1,9 +1,9 @@
-from dataclasses import dataclass
 from decimal import Decimal
 
+from app.models import CommandModel
 
-@dataclass(frozen=True, slots=True)
-class CreateProduct:
+
+class CreateProduct(CommandModel):
     title: str
     description: str | None = None
     images: list[str] | None = None
@@ -13,8 +13,7 @@ class CreateProduct:
     wb_price: Decimal | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class UpdateProduct:
+class UpdateProduct(CommandModel):
     title: str | None = None
     description: str | None = None
     images: list[str] | None = None

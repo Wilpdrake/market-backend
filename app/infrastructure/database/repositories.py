@@ -1,3 +1,4 @@
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import delete, or_, select
@@ -5,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.users.exceptions import ConflictError
-from app.domain.users.entities import User
+from app.domain.users.models import User, UserRole
 from app.infrastructure.database.models import UserModel
 
 
@@ -14,7 +15,7 @@ def _to_entity(model: UserModel) -> User:
         id=model.id,
         email=model.email,
         username=model.username,
-        role=model.role,  # type: ignore[arg-type]  # DB constraint/migration limits valid values.
+        role=cast(UserRole, model.role),  # The database constraint permits only UserRole values.
         password_hash=model.password_hash,
         phone=model.phone,
         name=model.name,

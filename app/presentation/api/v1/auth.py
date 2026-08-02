@@ -3,9 +3,9 @@ from typing import Annotated
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, Header
 
-from app.application.users.dto import AccessToken, CreateUser
+from app.application.users.models import AccessToken, CreateUser
 from app.application.users.services import AuthService, UserService
-from app.domain.users.entities import User
+from app.domain.users.models import User
 from app.presentation.api.v1.schemas import (
     LoginRequest,
     RegisterRequest,

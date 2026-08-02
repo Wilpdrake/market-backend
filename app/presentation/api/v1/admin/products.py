@@ -3,10 +3,10 @@ from uuid import UUID
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, Query, Response, status
 
-from app.application.products.dto import CreateProduct, UpdateProduct
+from app.application.products.models import CreateProduct, UpdateProduct
 from app.application.products.services import ProductService
 from app.application.users.services import AuthService
-from app.domain.products.entities import Product
+from app.domain.products.models import Product
 from app.presentation.api.v1.admin.dependencies import current_admin
 from app.presentation.api.v1.admin.schemas import (
     ProductCreateRequest,

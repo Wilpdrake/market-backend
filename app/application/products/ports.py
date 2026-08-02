@@ -1,7 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from app.domain.products.entities import Product
+from app.domain.products.models import Product
 
 
 class ProductRepository(Protocol):

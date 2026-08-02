@@ -5,7 +5,7 @@ from urllib.parse import quote
 from pydantic import EmailStr, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.domain.users.entities import normalize_username
+from app.domain.users.models import normalize_username
 
 
 class Settings(BaseSettings):

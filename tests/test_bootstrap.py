@@ -5,7 +5,7 @@ import pytest
 
 from app.application.users.services import UserService
 from app.core.config import Settings
-from app.domain.users.entities import User
+from app.domain.users.models import User
 from app.main import _bootstrap_first_superuser
 
 

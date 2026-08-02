@@ -3,7 +3,7 @@ from fastapi import APIRouter
 
 from app.application.users.services import AuthService, UserService
 from app.core.config import Settings
-from app.domain.users.entities import User
+from app.domain.users.models import User
 from app.presentation.api.v1.auth import AuthorizationHeader, current_user
 from app.presentation.api.v1.schemas import (
     TelegramLinkResponse,

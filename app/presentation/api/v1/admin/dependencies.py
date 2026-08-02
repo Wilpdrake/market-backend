@@ -1,6 +1,6 @@
 from app.application.users.exceptions import PermissionDeniedError
 from app.application.users.services import AuthService
-from app.domain.users.entities import User
+from app.domain.users.models import User
 from app.presentation.api.v1.auth import current_user
 
 

@@ -1,33 +1,32 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import EmailStr, Field
 
-from app.domain.users.entities import UserRole
+from app.domain.users.models import UserRole
+from app.models import ApiModel, ApiResponseModel
 
 
-class RegisterRequest(BaseModel):
+class RegisterRequest(ApiModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     phone: str | None = Field(default=None, max_length=32)
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(ApiModel):
     # The historical JSON key remains ``email`` for API compatibility, but the value may
     # now be either an email address or the human-friendly username from deployment data.
     email: str = Field(min_length=1, max_length=320)
     password: str = Field(min_length=8, max_length=128)
 
 
-class UpdateUserRequest(BaseModel):
+class UpdateUserRequest(ApiModel):
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=32)
     is_active: bool | None = None
 
 
-class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class UserResponse(ApiResponseModel):
     id: UUID
     username: str | None
     email: EmailStr
@@ -43,33 +42,33 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(ApiModel):
     access_token: str
     token_type: str
 
 
-class VerificationTokenRequest(BaseModel):
+class VerificationTokenRequest(ApiModel):
     token: str
 
 
-class TelegramLinkResponse(BaseModel):
+class TelegramLinkResponse(ApiModel):
     deep_link: str
 
 
-class TelegramUser(BaseModel):
+class TelegramUser(ApiModel):
     id: int
     username: str | None = None
 
 
-class TelegramChat(BaseModel):
+class TelegramChat(ApiModel):
     id: int
 
 
-class TelegramMessage(BaseModel):
+class TelegramMessage(ApiModel):
     text: str | None = None
     chat: TelegramChat
     from_user: TelegramUser | None = Field(default=None, alias="from")
 
 
-class TelegramUpdate(BaseModel):
+class TelegramUpdate(ApiModel):
     message: TelegramMessage | None = None

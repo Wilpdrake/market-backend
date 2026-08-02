@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.users.exceptions import ConflictError
-from app.domain.users.entities import User
+from app.domain.users.models import User
 from app.infrastructure.database.models import UserModel
 from app.infrastructure.database.repositories import SqlAlchemyUserRepository
 

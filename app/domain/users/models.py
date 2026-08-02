@@ -1,10 +1,13 @@
 import re
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID, uuid4
 
-# Roles are domain data, not frontend labels.  Keep this union close to the User entity so
+from pydantic import Field
+
+from app.models import EntityModel
+
+# Roles are domain data, not frontend labels. Keep this union close to the User model so
 # HTTP schemas, services and persistence all share the same allowed values.
 UserRole = Literal["user", "moder", "admin", "developer", "owner"]
 ADMIN_ROLES: frozenset[str] = frozenset({"moder", "admin", "developer", "owner"})
@@ -27,11 +30,10 @@ def normalize_username(value: str) -> str:
     return normalized
 
 
-@dataclass(slots=True)
-class User:
+class User(EntityModel):
     email: str
     password_hash: str
-    id: UUID = field(default_factory=uuid4)
+    id: UUID = Field(default_factory=uuid4)
     phone: str | None = None
     username: str | None = None
     role: UserRole = "user"
@@ -51,8 +53,8 @@ class User:
     email_verification_token_hash: str | None = None
     phone_verification_token_hash: str | None = None
     telegram_verification_token_hash: str | None = None
-    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def effective_role(self) -> UserRole:

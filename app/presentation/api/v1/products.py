@@ -11,18 +11,19 @@ from uuid import UUID
 
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, Query
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from app.application.products.services import ProductService
-from app.domain.products.entities import Product
+from app.domain.products.models import Product
+from app.models import ApiResponseModel
 
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-class PublicProductResponse(BaseModel):
+class PublicProductResponse(ApiResponseModel):
     """Storefront representation deliberately excludes administrator identifiers."""
 
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True)
 
     uuid: UUID = Field(validation_alias="id")
     title: str

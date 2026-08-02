@@ -1,16 +1,16 @@
-from dataclasses import replace
 from uuid import UUID
 
 import pytest
 
-from app.application.users.dto import CreateUser, UpdateUser
 from app.application.users.exceptions import (
     ConflictError,
     InvalidCredentialsError,
     PermissionDeniedError,
 )
+from app.application.users.models import CreateUser, UpdateUser
 from app.application.users.services import AuthService, UserService
-from app.domain.users.entities import User
+from app.domain.users.models import User
+from app.models import replace_model as replace
 from app.presentation.api.v1.admin.dependencies import current_admin
 
 

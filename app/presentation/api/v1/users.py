@@ -3,10 +3,10 @@ from uuid import UUID
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, Response, status
 
-from app.application.users.dto import UpdateUser
 from app.application.users.exceptions import PermissionDeniedError
+from app.application.users.models import UpdateUser
 from app.application.users.services import AuthService, UserService
-from app.domain.users.entities import User
+from app.domain.users.models import User
 from app.presentation.api.v1.auth import AuthorizationHeader, current_user
 from app.presentation.api.v1.schemas import UpdateUserRequest, UserResponse
 

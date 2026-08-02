@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.products.entities import Product
+from app.domain.products.models import Product
 from app.infrastructure.database.models import ProductModel
 
 
