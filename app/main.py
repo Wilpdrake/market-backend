@@ -3,7 +3,9 @@ from contextlib import asynccontextmanager
 
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.application.users.exceptions import (
     ApplicationError,
@@ -17,6 +19,8 @@ from app.application.users.services import UserService
 from app.core.config import Settings, get_settings
 from app.ioc import create_container
 from app.presentation.api.v1.router import router as v1_router
+
+ALLOWED_ORIGIN = "https://woodandclay.ru"
 
 
 async def _bootstrap_first_superuser(service: UserService, settings: Settings) -> None:
@@ -55,11 +59,11 @@ async def _bootstrap_first_superuser(service: UserService, settings: Settings) -
 
 
 def create_app() -> FastAPI:
+    settings = get_settings()
     container = create_container()
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-        settings = get_settings()
         if settings.first_superuser_email and settings.first_superuser_password:
             async with container() as request_container:
                 service = await request_container.get(UserService)
@@ -68,7 +72,19 @@ def create_app() -> FastAPI:
         await container.close()
 
     app = FastAPI(title="Market Backend", version="0.1.0", lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[ALLOWED_ORIGIN],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.include_router(v1_router)
+    app.mount(
+        "/uploads",
+        StaticFiles(directory=settings.upload_dir, check_dir=False),
+        name="uploads",
+    )
     setup_dishka(container, app)
 
     @app.exception_handler(ApplicationError)

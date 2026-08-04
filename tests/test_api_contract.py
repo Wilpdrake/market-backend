@@ -73,6 +73,22 @@ def test_admin_api_is_exposed_in_openapi() -> None:
     } == product_output.keys()
 
 
+def test_product_create_accepts_multiple_image_parts_before_authentication() -> None:
+    """Binary multipart bodies must be parsed instead of encoded as validation errors."""
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/api/v1/admin/products",
+            headers={"Authorization": "Bearer invalid-token"},
+            data={"product": '{"title":"Plate"}', "cover_index": "1"},
+            files=[
+                ("images", ("front.jpg", b"\xff\xd8front", "image/jpeg")),
+                ("images", ("back.jpg", b"\xff\xd8back", "image/jpeg")),
+            ],
+        )
+
+    assert response.status_code == 401
+
+
 def test_public_product_catalog_is_exposed_without_admin_prefix() -> None:
     """The storefront must not depend on an administrator-only endpoint."""
     with TestClient(create_app()) as client:

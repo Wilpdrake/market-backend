@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 from urllib.parse import quote
 
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     environment: str = "development"
     debug: bool = False
+    upload_dir: Path = Path("uploads")
     # DATABASE_URL may override these components. Component settings are safer for Compose
     # because URL-sensitive characters in credentials are encoded here, not in shell/YAML.
     database_url: str | None = None

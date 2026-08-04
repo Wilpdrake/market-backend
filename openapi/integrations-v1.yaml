@@ -1,0 +1,613 @@
+openapi: 3.1.0
+info:
+  title: Market Backend — Google Auth and T-Bank integrations
+  version: 0.1.0-draft
+  description: |
+    Contract-first specification for frontend and backend parallel development.
+    Operations marked with `x-status: planned` are not implemented yet.
+servers:
+  - url: /
+    description: Current origin
+
+tags:
+  - name: auth
+  - name: orders
+  - name: payments
+  - name: provider-webhooks
+
+paths:
+  /api/v1/auth/google:
+    post:
+      tags: [auth]
+      operationId: loginWithGoogle
+      summary: Sign in or register with a Google ID token
+      x-status: planned
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+            example:
+              credential: GOOGLE_ID_TOKEN
+      responses:
+        "200":
+          description: Market Backend access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/payments/tbank/options:
+    get:
+      tags: [payments]
+      operationId: listTBankPaymentOptions
+      summary: List public enabled T-Bank payment options
+      x-status: planned
+      security: []
+      responses:
+        "200":
+          description: Payment options configured by the backend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TBankPaymentOption"
+              example:
+                - id: tbank-card
+                  title: Банковская карта
+                  kind: card
+                  enabled: true
+                - id: tbank-sbp
+                  title: СБП
+                  kind: sbp
+                  enabled: true
+
+  /api/v1/orders:
+    post:
+      tags: [orders]
+      operationId: createOrder
+      summary: Create an order using authoritative product prices
+      description: The backend calculates every price and the total; clients never submit the amount.
+      x-status: planned
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/orders/{order_id}:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+    get:
+      tags: [orders]
+      operationId: getOrder
+      summary: Get an order owned by the current user
+      x-status: planned
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current order state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/orders/{order_id}/payments/tbank:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+    post:
+      tags: [payments]
+      operationId: createTBankPayment
+      summary: Initialize a T-Bank payment for an order
+      description: |
+        `idempotency_key` identifies one frontend payment attempt. A network retry with
+        the same key returns the same payment and must not create another provider payment.
+      x-status: planned
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTBankPaymentRequest"
+      responses:
+        "200":
+          description: Existing payment returned for the same idempotency key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "201":
+          description: Payment initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "502":
+          $ref: "#/components/responses/ProviderUnavailable"
+
+  /api/v1/orders/{order_id}/payment:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+    get:
+      tags: [payments]
+      operationId: getOrderPayment
+      summary: Get the current payment for an order
+      description: The backend may reconcile a pending local payment with T-Bank before responding.
+      x-status: planned
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current payment state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "502":
+          $ref: "#/components/responses/ProviderUnavailable"
+
+  /api/v1/orders/{order_id}/payment/cancel:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+    post:
+      tags: [payments]
+      operationId: cancelOrderPayment
+      summary: Cancel an unpaid payment
+      x-status: planned
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cancelled payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "502":
+          $ref: "#/components/responses/ProviderUnavailable"
+
+  /api/v1/payments/tbank/webhook:
+    post:
+      tags: [provider-webhooks]
+      operationId: receiveTBankWebhook
+      summary: Receive and verify a T-Bank payment notification
+      description: Provider-only operation. Browser clients must never call it.
+      x-status: planned
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Provider-specific payload validated against the T-Bank contract by backend.
+      responses:
+        "200":
+          description: Notification accepted, including an already processed notification
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: OK
+              example: OK
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Invalid provider signature
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    OrderId:
+      name: order_id
+      in: path
+      required: true
+      description: Market Backend order UUID
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Business validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Unauthorized:
+      description: Authentication failed or access token is invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Forbidden:
+      description: The authenticated user cannot access this resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Conflict:
+      description: Resource state or unique identity conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ValidationError:
+      description: Request did not satisfy the HTTP schema
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpValidationError"
+    ProviderUnavailable:
+      description: T-Bank rejected the request or is temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
+  schemas:
+    GoogleAuthRequest:
+      type: object
+      additionalProperties: false
+      required: [credential]
+      properties:
+        credential:
+          type: string
+          minLength: 1
+          description: Google ID token returned by Google Identity Services.
+
+    TokenResponse:
+      type: object
+      additionalProperties: false
+      required: [access_token, token_type]
+      properties:
+        access_token:
+          type: string
+          minLength: 1
+        token_type:
+          type: string
+          const: bearer
+
+    CreateOrderItemRequest:
+      type: object
+      additionalProperties: false
+      required: [product_id, quantity]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+
+    Customer:
+      type: object
+      additionalProperties: false
+      required: [name, email, phone]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 32
+
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [items, customer]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/CreateOrderItemRequest"
+        customer:
+          $ref: "#/components/schemas/Customer"
+        comment:
+          type: [string, "null"]
+          maxLength: 2000
+          default: null
+
+    OrderItem:
+      type: object
+      additionalProperties: false
+      required: [product_id, title, quantity, unit_price, total]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unit_price:
+          $ref: "#/components/schemas/Money"
+        total:
+          $ref: "#/components/schemas/Money"
+
+    Order:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - status
+        - items
+        - total
+        - currency
+        - customer
+        - comment
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        total:
+          $ref: "#/components/schemas/Money"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        customer:
+          $ref: "#/components/schemas/Customer"
+        comment:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    OrderStatus:
+      type: string
+      enum:
+        - new
+        - awaiting_payment
+        - paid
+        - payment_failed
+        - cancelled
+        - refunded
+
+    TBankPaymentOption:
+      type: object
+      additionalProperties: false
+      required: [id, title, kind, enabled]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          description: Stable public ID; never a T-Bank TerminalKey.
+        title:
+          type: string
+          minLength: 1
+        kind:
+          $ref: "#/components/schemas/PaymentKind"
+        enabled:
+          type: boolean
+
+    PaymentKind:
+      type: string
+      enum: [card, sbp]
+
+    CreateTBankPaymentRequest:
+      type: object
+      additionalProperties: false
+      required: [payment_option_id, idempotency_key]
+      properties:
+        payment_option_id:
+          type: string
+          minLength: 1
+        idempotency_key:
+          type: string
+          format: uuid
+
+    PaymentConfirmation:
+      type: object
+      additionalProperties: false
+      required: [type, url]
+      properties:
+        type:
+          type: string
+          enum: [redirect, qr]
+        url:
+          type: string
+          format: uri
+
+    Payment:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - order_id
+        - provider
+        - payment_option_id
+        - status
+        - amount
+        - currency
+        - confirmation
+        - failure_message
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          const: tbank
+        payment_option_id:
+          type: string
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        amount:
+          $ref: "#/components/schemas/Money"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        confirmation:
+          oneOf:
+            - $ref: "#/components/schemas/PaymentConfirmation"
+            - type: "null"
+        failure_message:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaymentStatus:
+      type: string
+      enum:
+        - pending
+        - authorized
+        - succeeded
+        - failed
+        - cancelled
+        - refunded
+
+    Money:
+      type: string
+      pattern: "^[0-9]+\\.[0-9]{2}$"
+      examples: ["1490.00"]
+      description: Decimal amount in major currency units; never a JSON floating-point number.
+
+    Currency:
+      type: string
+      const: RUB
+
+    ApiError:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+
+    ValidationErrorItem:
+      type: object
+      required: [loc, msg, type]
+      properties:
+        loc:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+        type:
+          type: string
+
+    HttpValidationError:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationErrorItem"
