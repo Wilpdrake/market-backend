@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from pydantic import ConfigDict, EmailStr, Field, model_validator
@@ -90,6 +91,7 @@ class ProductCreateRequest(ApiModel):
     price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     ozon_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     wb_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    tag_ids: list[Any] | None = None
 
 
 class ProductUpdateRequest(ApiModel):
