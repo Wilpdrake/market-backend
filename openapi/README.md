@@ -1,16 +1,10 @@
-# OpenAPI contracts
+# OpenAPI contract
 
-## Google Auth and T‑Bank
+[`openapi.yaml`](openapi.yaml) is the single machine-readable contract for the public,
+administrative and planned Market Backend HTTP API.
 
-The machine-readable contract for parallel frontend/backend development is:
-
-- [`integrations-v1.yaml`](integrations-v1.yaml) — source of truth for paths, schemas,
-  authentication and HTTP responses;
-- [`../docs/google-tbank-api-draft.md`](../docs/google-tbank-api-draft.md) — explanatory
-  flows, examples and unresolved product questions.
-
-All operations currently carry `x-status: planned`; they are not available in the running
-FastAPI application yet.
+- `x-status: implemented` marks operations exposed by the current FastAPI application;
+- `x-status: planned` marks contract-first operations that are not available yet.
 
 ## Frontend usage
 
@@ -39,6 +33,9 @@ Before changing `x-status` from `planned` to `implemented`, the API review shoul
 After approval, backend tests must compare the relevant paths and component schemas from the
 FastAPI-generated `/openapi.json` with this contract. Breaking changes require explicit API
 review rather than silent edits.
+
+Architecture documentation remains in [`structure.md`](structure.md), while Pydantic model
+conventions remain in [`pydantic-models.md`](pydantic-models.md).
 
 ## Local validation
 

@@ -92,7 +92,7 @@ market-backend/
 │   ├── env.py
 │   ├── script.py.mako
 │   └── versions/
-├── docs/                                # Документация backend и API
+├── openapi/                             # Документация backend и API
 ├── tests/                               # Автоматические тесты
 ├── alembic.ini
 ├── Dockerfile                           # Сборка образа backend

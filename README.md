@@ -16,15 +16,12 @@
 - PostgreSQL, SQLAlchemy 2 async, Alembic, Dishka;
 - Docker Compose и Jenkins pipeline с Ruff, mypy, pytest, build и deploy.
 
-Контракт для frontend-разработчика с TypeScript-интерфейсами, полями и примерами
-запросов находится в [`docs/frontend-api.md`](docs/frontend-api.md).
-
-Контракт авторизации и CRUD административной панели находится в
-[`docs/admin-api.md`](docs/admin-api.md).
+Единый контракт публичного, административного и планируемого HTTP API находится в
+[`openapi/openapi.yaml`](openapi/openapi.yaml).
 
 Расположение и правила Pydantic-моделей описаны в
-[`docs/pydantic-models.md`](docs/pydantic-models.md), полная архитектура — в
-[`docs/structure.md`](docs/structure.md).
+[`openapi/pydantic-models.md`](openapi/pydantic-models.md), полная архитектура — в
+[`openapi/structure.md`](openapi/structure.md).
 
 ## Структура
 

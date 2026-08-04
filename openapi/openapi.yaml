@@ -1,0 +1,2273 @@
+openapi: 3.1.0
+info:
+  title: Market Backend API
+  version: 0.1.0
+  description: 'Unified HTTP API contract for Market Backend. Operations marked with `x-status: implemented`
+    are exposed by the current FastAPI application; operations marked with `x-status: planned` are contract-first
+    proposals and are not available yet.'
+paths:
+  /api/v1/admin/auth/token:
+    post:
+      tags:
+      - admin
+      summary: Login
+      operationId: login_api_v1_admin_auth_token_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/auth/me:
+    get:
+      tags:
+      - admin
+      summary: Me
+      operationId: me_api_v1_admin_auth_me_get
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/users:
+    get:
+      tags:
+      - admin
+      summary: List Users
+      operationId: list_users_api_v1_admin_users_get
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 100
+          title: Limit
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUserResponse'
+                title: Response List Users Api V1 Admin Users Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    post:
+      tags:
+      - admin
+      summary: Create User
+      operationId: create_user_api_v1_admin_users_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/users/{user_id}:
+    get:
+      tags:
+      - admin
+      summary: Get User
+      operationId: get_user_api_v1_admin_users__user_id__get
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    patch:
+      tags:
+      - admin
+      summary: Update User
+      operationId: update_user_api_v1_admin_users__user_id__patch
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    delete:
+      tags:
+      - admin
+      summary: Delete User
+      operationId: delete_user_api_v1_admin_users__user_id__delete
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/products:
+    get:
+      tags:
+      - admin
+      summary: List Products
+      operationId: list_products_api_v1_admin_products_get
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 100
+          title: Limit
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductResponse'
+                title: Response List Products Api V1 Admin Products Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    post:
+      tags:
+      - admin
+      summary: Create Product
+      operationId: create_product_api_v1_admin_products_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/products/{product_id}:
+    get:
+      tags:
+      - admin
+      summary: Get Product
+      operationId: get_product_api_v1_admin_products__product_id__get
+      parameters:
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Product Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    patch:
+      tags:
+      - admin
+      summary: Update Product
+      operationId: update_product_api_v1_admin_products__product_id__patch
+      parameters:
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Product Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    delete:
+      tags:
+      - admin
+      summary: Delete Product
+      operationId: delete_product_api_v1_admin_products__product_id__delete
+      parameters:
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Product Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/health/live:
+    get:
+      tags:
+      - health
+      summary: Liveness
+      operationId: liveness_api_v1_health_live_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Liveness Api V1 Health Live Get
+      x-status: implemented
+  /api/v1/products:
+    get:
+      tags:
+      - products
+      summary: List Products
+      description: Return a bounded page of products without requiring authentication.
+      operationId: list_products_api_v1_products_get
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 100
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicProductResponse'
+                title: Response List Products Api V1 Products Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/products/{product_id}:
+    get:
+      tags:
+      - products
+      summary: Get Product
+      description: Return one public product card or the common domain-level 404 response.
+      operationId: get_product_api_v1_products__product_id__get
+      parameters:
+      - name: product_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Product Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProductResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/auth/register:
+    post:
+      tags:
+      - auth
+      summary: Register
+      operationId: register_api_v1_auth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/auth/token:
+    post:
+      tags:
+      - auth
+      summary: Login
+      operationId: login_api_v1_auth_token_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/users/me:
+    get:
+      tags:
+      - users
+      summary: Me
+      operationId: me_api_v1_users_me_get
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/users:
+    get:
+      tags:
+      - users
+      summary: List Users
+      operationId: list_users_api_v1_users_get
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 100
+          title: Limit
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+                title: Response List Users Api V1 Users Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/users/{user_id}:
+    get:
+      tags:
+      - users
+      summary: Get User
+      operationId: get_user_api_v1_users__user_id__get
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    patch:
+      tags:
+      - users
+      summary: Update User
+      operationId: update_user_api_v1_users__user_id__patch
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    delete:
+      tags:
+      - users
+      summary: Delete User
+      operationId: delete_user_api_v1_users__user_id__delete
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/verifications/email/request:
+    post:
+      tags:
+      - verifications
+      summary: Request Email
+      operationId: request_email_api_v1_verifications_email_request_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Request Email Api V1 Verifications Email Request Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/verifications/email/confirm:
+    post:
+      tags:
+      - verifications
+      summary: Confirm Email
+      operationId: confirm_email_api_v1_verifications_email_confirm_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationTokenRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/verifications/phone/request:
+    post:
+      tags:
+      - verifications
+      summary: Request Phone
+      operationId: request_phone_api_v1_verifications_phone_request_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Request Phone Api V1 Verifications Phone Request Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/verifications/phone/confirm:
+    post:
+      tags:
+      - verifications
+      summary: Confirm Phone
+      operationId: confirm_phone_api_v1_verifications_phone_confirm_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationTokenRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/verifications/telegram/request:
+    post:
+      tags:
+      - verifications
+      summary: Request Telegram
+      operationId: request_telegram_api_v1_verifications_telegram_request_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramLinkResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/telegram/webhook:
+    post:
+      tags:
+      - telegram
+      summary: Webhook
+      operationId: webhook_api_v1_telegram_webhook_post
+      parameters:
+      - name: X-Telegram-Bot-Api-Secret-Token
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Telegram-Bot-Api-Secret-Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramUpdate'
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/auth/google:
+    post:
+      tags:
+      - auth
+      operationId: loginWithGoogle
+      summary: Sign in or register with a Google ID token
+      x-status: planned
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+            example:
+              credential: GOOGLE_ID_TOKEN
+      responses:
+        '200':
+          description: Market Backend access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/payments/tbank/options:
+    get:
+      tags:
+      - payments
+      operationId: listTBankPaymentOptions
+      summary: List public enabled T-Bank payment options
+      x-status: planned
+      security: []
+      responses:
+        '200':
+          description: Payment options configured by the backend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TBankPaymentOption'
+              example:
+              - id: tbank-card
+                title: Банковская карта
+                kind: card
+                enabled: true
+              - id: tbank-sbp
+                title: СБП
+                kind: sbp
+                enabled: true
+  /api/v1/orders:
+    post:
+      tags:
+      - orders
+      operationId: createOrder
+      summary: Create an order using authoritative product prices
+      description: The backend calculates every price and the total; clients never submit the amount.
+      x-status: planned
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/orders/{order_id}:
+    parameters:
+    - $ref: '#/components/parameters/OrderId'
+    get:
+      tags:
+      - orders
+      operationId: getOrder
+      summary: Get an order owned by the current user
+      x-status: planned
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Current order state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/orders/{order_id}/payments/tbank:
+    parameters:
+    - $ref: '#/components/parameters/OrderId'
+    post:
+      tags:
+      - payments
+      operationId: createTBankPayment
+      summary: Initialize a T-Bank payment for an order
+      description: '`idempotency_key` identifies one frontend payment attempt. A network retry with
+
+        the same key returns the same payment and must not create another provider payment.
+
+        '
+      x-status: planned
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTBankPaymentRequest'
+      responses:
+        '200':
+          description: Existing payment returned for the same idempotency key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '201':
+          description: Payment initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          $ref: '#/components/responses/ProviderUnavailable'
+  /api/v1/orders/{order_id}/payment:
+    parameters:
+    - $ref: '#/components/parameters/OrderId'
+    get:
+      tags:
+      - payments
+      operationId: getOrderPayment
+      summary: Get the current payment for an order
+      description: The backend may reconcile a pending local payment with T-Bank before responding.
+      x-status: planned
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Current payment state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          $ref: '#/components/responses/ProviderUnavailable'
+  /api/v1/orders/{order_id}/payment/cancel:
+    parameters:
+    - $ref: '#/components/parameters/OrderId'
+    post:
+      tags:
+      - payments
+      operationId: cancelOrderPayment
+      summary: Cancel an unpaid payment
+      x-status: planned
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Cancelled payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          $ref: '#/components/responses/ProviderUnavailable'
+  /api/v1/payments/tbank/webhook:
+    post:
+      tags:
+      - provider-webhooks
+      operationId: receiveTBankWebhook
+      summary: Receive and verify a T-Bank payment notification
+      description: Provider-only operation. Browser clients must never call it.
+      x-status: planned
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Provider-specific payload validated against the T-Bank contract by backend.
+      responses:
+        '200':
+          description: Notification accepted, including an already processed notification
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: OK
+              example: OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid provider signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+components:
+  schemas:
+    AdminLoginRequest:
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          minLength: 1
+          title: Email
+        password:
+          type: string
+          maxLength: 128
+          minLength: 8
+          title: Password
+      additionalProperties: false
+      type: object
+      required:
+      - email
+      - password
+      title: AdminLoginRequest
+    AdminUserCreateRequest:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+        surname:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Surname
+        patronymic:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Patronymic
+        username:
+          anyOf:
+          - type: string
+            maxLength: 64
+            minLength: 1
+          - type: 'null'
+          title: Username
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          maxLength: 128
+          minLength: 8
+          title: Password
+        password_confirmation:
+          type: string
+          maxLength: 128
+          minLength: 8
+          title: Password Confirmation
+        contact_number:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          title: Contact Number
+        telegram_username:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Telegram Username
+        comment:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Comment
+        avatar_image:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+          title: Avatar Image
+        header_image:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+          title: Header Image
+        role:
+          type: string
+          enum:
+          - user
+          - moder
+          - admin
+          - developer
+          - owner
+          title: Role
+          default: user
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      - surname
+      - email
+      - password
+      - password_confirmation
+      title: AdminUserCreateRequest
+    AdminUserResponse:
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          title: Uuid
+        name:
+          type: string
+          title: Name
+        surname:
+          type: string
+          title: Surname
+        patronymic:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Patronymic
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        email:
+          type: string
+          format: email
+          title: Email
+        contact_number:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Contact Number
+        telegram_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Telegram Username
+        comment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Comment
+        avatar_image:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Image
+        header_image:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Header Image
+        role:
+          type: string
+          enum:
+          - user
+          - moder
+          - admin
+          - developer
+          - owner
+          title: Role
+        is_superuser:
+          type: boolean
+          title: Is Superuser
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+        is_active:
+          type: boolean
+          title: Is Active
+        is_email_verified:
+          type: boolean
+          title: Is Email Verified
+        is_phone_verified:
+          type: boolean
+          title: Is Phone Verified
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      additionalProperties: false
+      type: object
+      required:
+      - uuid
+      - name
+      - surname
+      - patronymic
+      - username
+      - email
+      - contact_number
+      - telegram_username
+      - comment
+      - avatar_image
+      - header_image
+      - role
+      - is_superuser
+      - created_by
+      - is_active
+      - is_email_verified
+      - is_phone_verified
+      - created_at
+      - updated_at
+      title: AdminUserResponse
+    AdminUserUpdateRequest:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        surname:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Surname
+        patronymic:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Patronymic
+        username:
+          anyOf:
+          - type: string
+            maxLength: 64
+            minLength: 1
+          - type: 'null'
+          title: Username
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+        password:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 8
+          - type: 'null'
+          title: Password
+        password_confirmation:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 8
+          - type: 'null'
+          title: Password Confirmation
+        contact_number:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          title: Contact Number
+        telegram_username:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Telegram Username
+        comment:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Comment
+        avatar_image:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+          title: Avatar Image
+        header_image:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+          title: Header Image
+        role:
+          anyOf:
+          - type: string
+            enum:
+            - user
+            - moder
+            - admin
+            - developer
+            - owner
+          - type: 'null'
+          title: Role
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      additionalProperties: false
+      type: object
+      title: AdminUserUpdateRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LoginRequest:
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          minLength: 1
+          title: Email
+        password:
+          type: string
+          maxLength: 128
+          minLength: 8
+          title: Password
+      additionalProperties: false
+      type: object
+      required:
+      - email
+      - password
+      title: LoginRequest
+    ProductResponse:
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          title: Uuid
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        images:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Images
+        header_image:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Header Image
+        price:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Price
+        ozon_price:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Ozon Price
+        wb_price:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Wb Price
+        created_by:
+          type: string
+          format: uuid
+          title: Created By
+        updated_by:
+          type: string
+          format: uuid
+          title: Updated By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      additionalProperties: false
+      type: object
+      required:
+      - uuid
+      - title
+      - description
+      - images
+      - header_image
+      - price
+      - ozon_price
+      - wb_price
+      - created_by
+      - updated_by
+      - created_at
+      - updated_at
+      title: ProductResponse
+    PublicProductResponse:
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          title: Uuid
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        images:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Images
+        header_image:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Header Image
+        price:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Price
+        ozon_price:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Ozon Price
+        wb_price:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Wb Price
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      additionalProperties: false
+      type: object
+      required:
+      - uuid
+      - title
+      - description
+      - images
+      - header_image
+      - price
+      - ozon_price
+      - wb_price
+      - created_at
+      - updated_at
+      title: PublicProductResponse
+      description: Storefront representation deliberately excludes administrator identifiers.
+    RegisterRequest:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          maxLength: 128
+          minLength: 8
+          title: Password
+        phone:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          title: Phone
+      additionalProperties: false
+      type: object
+      required:
+      - email
+      - password
+      title: RegisterRequest
+    TelegramChat:
+      properties:
+        id:
+          type: integer
+          title: Id
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      title: TelegramChat
+    TelegramLinkResponse:
+      properties:
+        deep_link:
+          type: string
+          title: Deep Link
+      additionalProperties: false
+      type: object
+      required:
+      - deep_link
+      title: TelegramLinkResponse
+    TelegramMessage:
+      properties:
+        text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Text
+        chat:
+          $ref: '#/components/schemas/TelegramChat'
+        from:
+          anyOf:
+          - $ref: '#/components/schemas/TelegramUser'
+          - type: 'null'
+      additionalProperties: false
+      type: object
+      required:
+      - chat
+      title: TelegramMessage
+    TelegramUpdate:
+      properties:
+        message:
+          anyOf:
+          - $ref: '#/components/schemas/TelegramMessage'
+          - type: 'null'
+      additionalProperties: false
+      type: object
+      title: TelegramUpdate
+    TelegramUser:
+      properties:
+        id:
+          type: integer
+          title: Id
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      title: TelegramUser
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+      additionalProperties: false
+      type: object
+      required:
+      - access_token
+      - token_type
+      title: TokenResponse
+    UpdateUserRequest:
+      properties:
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+        phone:
+          anyOf:
+          - type: string
+            maxLength: 32
+          - type: 'null'
+          title: Phone
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      additionalProperties: false
+      type: object
+      title: UpdateUserRequest
+    UserResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+        email:
+          type: string
+          format: email
+          title: Email
+        phone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Phone
+        telegram_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Telegram Id
+        telegram_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Telegram Username
+        is_active:
+          type: boolean
+          title: Is Active
+        is_superuser:
+          type: boolean
+          title: Is Superuser
+        role:
+          type: string
+          enum:
+          - user
+          - moder
+          - admin
+          - developer
+          - owner
+          title: Role
+        is_email_verified:
+          type: boolean
+          title: Is Email Verified
+        is_phone_verified:
+          type: boolean
+          title: Is Phone Verified
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - username
+      - email
+      - phone
+      - telegram_id
+      - telegram_username
+      - is_active
+      - is_superuser
+      - role
+      - is_email_verified
+      - is_phone_verified
+      - created_at
+      - updated_at
+      title: UserResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    VerificationTokenRequest:
+      properties:
+        token:
+          type: string
+          title: Token
+      additionalProperties: false
+      type: object
+      required:
+      - token
+      title: VerificationTokenRequest
+    GoogleAuthRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - credential
+      properties:
+        credential:
+          type: string
+          minLength: 1
+          description: Google ID token returned by Google Identity Services.
+    CreateOrderItemRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - product_id
+      - quantity
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+    Customer:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - email
+      - phone
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 32
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - customer
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/CreateOrderItemRequest'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        comment:
+          type:
+          - string
+          - 'null'
+          maxLength: 2000
+          default: null
+    OrderItem:
+      type: object
+      additionalProperties: false
+      required:
+      - product_id
+      - title
+      - quantity
+      - unit_price
+      - total
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unit_price:
+          $ref: '#/components/schemas/Money'
+        total:
+          $ref: '#/components/schemas/Money'
+    Order:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - items
+      - total
+      - currency
+      - customer
+      - comment
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        total:
+          $ref: '#/components/schemas/Money'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        comment:
+          type:
+          - string
+          - 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    OrderStatus:
+      type: string
+      enum:
+      - new
+      - awaiting_payment
+      - paid
+      - payment_failed
+      - cancelled
+      - refunded
+    TBankPaymentOption:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - kind
+      - enabled
+      properties:
+        id:
+          type: string
+          minLength: 1
+          description: Stable public ID; never a T-Bank TerminalKey.
+        title:
+          type: string
+          minLength: 1
+        kind:
+          $ref: '#/components/schemas/PaymentKind'
+        enabled:
+          type: boolean
+    PaymentKind:
+      type: string
+      enum:
+      - card
+      - sbp
+    CreateTBankPaymentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - payment_option_id
+      - idempotency_key
+      properties:
+        payment_option_id:
+          type: string
+          minLength: 1
+        idempotency_key:
+          type: string
+          format: uuid
+    PaymentConfirmation:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - url
+      properties:
+        type:
+          type: string
+          enum:
+          - redirect
+          - qr
+        url:
+          type: string
+          format: uri
+    Payment:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - order_id
+      - provider
+      - payment_option_id
+      - status
+      - amount
+      - currency
+      - confirmation
+      - failure_message
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          const: tbank
+        payment_option_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        amount:
+          $ref: '#/components/schemas/Money'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        confirmation:
+          oneOf:
+          - $ref: '#/components/schemas/PaymentConfirmation'
+          - type: 'null'
+        failure_message:
+          type:
+          - string
+          - 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaymentStatus:
+      type: string
+      enum:
+      - pending
+      - authorized
+      - succeeded
+      - failed
+      - cancelled
+      - refunded
+    Money:
+      type: string
+      pattern: ^[0-9]+\.[0-9]{2}$
+      examples:
+      - '1490.00'
+      description: Decimal amount in major currency units; never a JSON floating-point number.
+    Currency:
+      type: string
+      const: RUB
+    ApiError:
+      type: object
+      required:
+      - detail
+      properties:
+        detail:
+          type: string
+    ValidationErrorItem:
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      properties:
+        loc:
+          type: array
+          items:
+            oneOf:
+            - type: string
+            - type: integer
+        msg:
+          type: string
+        type:
+          type: string
+    HttpValidationError:
+      type: object
+      required:
+      - detail
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorItem'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    OrderId:
+      name: order_id
+      in: path
+      required: true
+      description: Market Backend order UUID
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Business validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Unauthorized:
+      description: Authentication failed or access token is invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Forbidden:
+      description: The authenticated user cannot access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Conflict:
+      description: Resource state or unique identity conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ValidationError:
+      description: Request did not satisfy the HTTP schema
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpValidationError'
+    ProviderUnavailable:
+      description: T-Bank rejected the request or is temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+servers:
+- url: /
+  description: Current origin
+tags:
+- name: auth
+- name: orders
+- name: payments
+- name: provider-webhooks
+- name: admin
+- name: health
+- name: products
+- name: users
+- name: verifications
+- name: telegram
