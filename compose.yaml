@@ -14,6 +14,16 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  uploads-init:
+    build:
+      context: .
+      target: production
+    user: "0:0"
+    command: ["chown", "-R", "10001:10001", "/app/uploads"]
+    volumes:
+      - product_uploads:/app/uploads
+    restart: "no"
+
   api:
     build:
       context: .
@@ -40,6 +50,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      uploads-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/live')"]
       interval: 10s

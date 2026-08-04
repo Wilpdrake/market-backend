@@ -7,6 +7,7 @@ from app.application.products.models import CreateProduct
 from app.application.users.models import CreateUser
 from app.domain.products.models import Product
 from app.domain.users.models import User
+from app.presentation.api.v1.admin.schemas import ProductCreateRequest, ProductUpdateRequest
 from app.presentation.api.v1.schemas import RegisterRequest
 
 
@@ -55,3 +56,15 @@ def test_http_models_reject_unknown_json_fields() -> None:
             password="strong-password",
             unexpected="value",
         )
+
+
+@pytest.mark.parametrize("model_type", [ProductCreateRequest, ProductUpdateRequest])
+@pytest.mark.parametrize("temporary_field", ["tag_ids", "tags_ids"])
+def test_product_requests_temporarily_ignore_unimplemented_tag_fields(
+    model_type: type[ProductCreateRequest] | type[ProductUpdateRequest],
+    temporary_field: str,
+) -> None:
+    request = model_type.model_validate({"title": "Plate", temporary_field: [1, "legacy"]})
+
+    assert temporary_field not in request.model_dump()
+    CreateProduct(**request.model_dump())

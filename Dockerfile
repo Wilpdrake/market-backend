@@ -33,6 +33,7 @@ RUN groupadd --system --gid 10001 app \
 
 WORKDIR /app
 COPY --from=production-build --chown=app:app /app /app
+RUN install -d -o app -g app -m 0755 /app/uploads
 
 USER app
 EXPOSE 8000

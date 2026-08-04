@@ -83,7 +83,16 @@ class AdminUserResponse(ApiResponseModel):
     updated_at: datetime
 
 
-class ProductCreateRequest(ApiModel):
+class ProductRequest(ApiModel):
+    @model_validator(mode="before")
+    @classmethod
+    def ignore_unimplemented_tag_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        return {key: value for key, value in data.items() if key not in {"tag_ids", "tags_ids"}}
+
+
+class ProductCreateRequest(ProductRequest):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=5000)
     images: list[str] | None = None
@@ -91,10 +100,9 @@ class ProductCreateRequest(ApiModel):
     price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     ozon_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     wb_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
-    tag_ids: list[Any] | None = None
 
 
-class ProductUpdateRequest(ApiModel):
+class ProductUpdateRequest(ProductRequest):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=5000)
     images: list[str] | None = None
