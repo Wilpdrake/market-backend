@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     telegram_bot_token: str | None = None
     telegram_bot_username: str = "market_bot"
     telegram_webhook_secret: str | None = None
+    # T-Bank internet acquiring. In development/tests, absent terminal credentials select a
+    # deterministic stub gateway; production rejects this configuration instead.
+    tbank_terminal_key: str | None = None
+    tbank_password: str | None = None
+    tbank_api_url: str = "https://securepay.tinkoff.ru/v2"
+    tbank_success_url: str | None = None
+    tbank_fail_url: str | None = None
+    tbank_notification_url: str | None = None
     first_superuser_email: EmailStr | None = None
     first_superuser_username: str | None = "wilpdrake"
     first_superuser_role: Literal["moder", "admin", "owner", "developer"] = "developer"
@@ -54,6 +62,11 @@ class Settings(BaseSettings):
         "first_superuser_email",
         "first_superuser_username",
         "first_superuser_password",
+        "tbank_terminal_key",
+        "tbank_password",
+        "tbank_success_url",
+        "tbank_fail_url",
+        "tbank_notification_url",
         mode="before",
     )
     @classmethod
@@ -72,6 +85,16 @@ class Settings(BaseSettings):
                 "FIRST_SUPERUSER_EMAIL and FIRST_SUPERUSER_PASSWORD must be configured together"
             )
         return self
+
+    @model_validator(mode="after")
+    def tbank_credentials_are_a_pair(self) -> "Settings":
+        if bool(self.tbank_terminal_key) != bool(self.tbank_password):
+            raise ValueError("TBANK_TERMINAL_KEY and TBANK_PASSWORD must be configured together")
+        return self
+
+    @property
+    def tbank_is_configured(self) -> bool:
+        return bool(self.tbank_terminal_key and self.tbank_password)
 
 
 @lru_cache

@@ -2,6 +2,8 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.config import Settings
+from app.infrastructure.payments.tbank import StubPaymentGateway
+from app.ioc import AppProvider
 
 
 def test_blank_initial_admin_credentials_are_optional() -> None:
@@ -75,3 +77,26 @@ def test_initial_admin_username_is_normalized_and_validated() -> None:
             first_superuser_password="valid-password",
             first_superuser_username="   ",
         )
+
+
+def test_development_without_tbank_credentials_uses_stub_gateway() -> None:
+    gateway = AppProvider().payment_gateway(Settings(environment="development"))
+
+    assert isinstance(gateway, StubPaymentGateway)
+
+
+def test_production_without_tbank_credentials_refuses_to_start_payments() -> None:
+    with pytest.raises(RuntimeError, match="TBANK_TERMINAL_KEY"):
+        AppProvider().payment_gateway(Settings(environment="production"))
+
+
+def test_production_tbank_requires_public_https_notification_url() -> None:
+    settings = Settings(
+        environment="production",
+        tbank_terminal_key="terminal",
+        tbank_password="password",
+        tbank_notification_url="http://backend:8000/api/v1/payments/tbank/webhook",
+    )
+
+    with pytest.raises(RuntimeError, match="public HTTPS"):
+        AppProvider().payment_gateway(settings)

@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from dishka.integrations.fastapi import FromDishka, inject
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Depends, Header
 
 from app.application.users.models import AccessToken, CreateUser
 from app.application.users.services import AuthService, UserService
@@ -44,4 +44,17 @@ async def login(data: LoginRequest, service: FromDishka[AuthService]) -> AccessT
     return await service.login(str(data.email), data.password)
 
 
-AuthorizationHeader = Annotated[str | None, Header(alias="Authorization")]
+def _authorization_header(
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
+) -> str | None:
+    """Read the Authorization header without making it mandatory.
+
+    Declaring the header directly on a handler makes FastAPI answer a missing header with 422,
+    which reads as a malformed request. Authentication is not a validation concern: an absent
+    header must reach the auth service and surface as 401, which is what the storefront's
+    ``onUnauthorized`` hook reacts to.
+    """
+    return authorization
+
+
+AuthorizationHeader = Annotated[str | None, Depends(_authorization_header)]

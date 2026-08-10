@@ -4,10 +4,11 @@ Backend организован как **модульный монолит** с �
 инфраструктурный и HTTP-слои. Данные между слоями передаются типизированными Pydantic v2
 моделями; бизнес-логика при этом не зависит от FastAPI, SQLAlchemy, PostgreSQL и Dishka.
 
-При этом весь продукт является **polyrepo-системой**: backend, frontend и инфраструктура
+При этом весь продукт является **polyrepo-системой**: backend, frontend, bot и инфраструктура
 имеют независимые Git-репозитории. Оркестрация production-окружения, reverse proxy,
 PostgreSQL и общий Jenkins pipeline принадлежат репозиторию `market-infrastructure`, а не
-backend-приложению.
+backend-приложению. Локально backend также имеет собственные `compose.yaml` и `Jenkinsfile`
+для разработки и CI отдельного сервиса.
 
 ## Структура всей системы
 
@@ -15,14 +16,16 @@ backend-приложению.
 GitProjects/
 ├── market-backend/          # FastAPI, бизнес-логика, ORM-модели и Alembic
 ├── market-frontend/         # Локальное имя checkout frontend-приложения
+├── market-bot/              # Telegram бот
 └── market-infrastructure/   # Compose, Nginx, Jenkins и deployment-документация
 ```
 
 Репозитории остаются соседними. Это важно для Compose build contexts:
-`market-infrastructure/docker-compose.yml` собирает backend из `../market-backend`, а
-frontend — из `${FRONTEND_CONTEXT:-../market-frontend}`. Jenkins воспроизводит ту же
-структуру workspace, явно создавая каталоги `market-infrastructure`, `market-backend` и
-`market-frontend`.
+`market-infrastructure/docker-compose.yml` собирает backend из `../market-backend`,
+frontend — из `${FRONTEND_CONTEXT:-../market-frontend}`, а bot — из `${BOT_CONTEXT:-../market-bot}`.
+Jenkins воспроизводит ту же структуру workspace, явно клонируя четыре репозитория
+(`market-infrastructure`, `market-backend`, `market-bot`, `market-frontend`) в соседние
+каталоги.
 
 Frontend в Jenkins загружается из репозитория `git@github.com:yushiri/market-order.git`, но
 помещается в каталог `market-frontend`, чтобы путь совпадал с Compose-контекстом.
@@ -33,9 +36,11 @@ Frontend в Jenkins загружается из репозитория `git@gith
 |---|---|
 | `market-backend` | HTTP API, бизнес-правила, DI, доступ к данным, ORM и миграции Alembic |
 | `market-frontend` | Пользовательский и административный web-интерфейс |
-| `market-infrastructure` | Сборка общей системы, Nginx, PostgreSQL, secrets binding, CI/CD, security scans и smoke tests |
+| `market-bot` | Telegram-бот (polling) |
+| `market-infrastructure` | Сборка общей системы, Nginx, PostgreSQL, secrets binding и CI/CD (Jenkins) |
 
-Backend владеет кодом миграций и своим Dockerfile. Infrastructure определяет, когда и в
+Backend владеет кодом миграций, своим `Dockerfile`, локальным `compose.yaml` и
+собственным `Jenkinsfile` (Ruff/mypy/pytest). Infrastructure определяет, когда и в
 каком окружении образ запускается, как ему передаётся `DATABASE_URL` и каким публичным
 маршрутом он доступен.
 
@@ -93,9 +98,11 @@ market-backend/
 │   ├── script.py.mako
 │   └── versions/
 ├── openapi/                             # Документация backend и API
-├── tests/                               # Автоматические тесты
+├── tests/                               # Автоматические тесты (пока не создан)
 ├── alembic.ini
+├── compose.yaml                         # Локальный стек backend + PostgreSQL
 ├── Dockerfile                           # Сборка образа backend
+├── Jenkinsfile                          # Собственный CI: Ruff, mypy, pytest, build, deploy
 └── pyproject.toml
 ```
 
@@ -220,19 +227,20 @@ alembic/
 Autogenerate нельзя принимать без проверки: отдельно контролируются индексы, ограничения,
 переименования столбцов, PostgreSQL enum и операции с данными.
 
-### Запуск миграций в общей инфраструктуре
+### Запуск миграций вручную
 
-В текущем `market-infrastructure/docker-compose.yml` backend запускается командой:
+В текущем `market-infrastructure/docker-compose.yml` миграции не прогоняются автоматически.
+Перед первым деплоем схему применяет оператор одноразовым запуском контейнера backend:
 
-```text
-alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000
+```bash
+docker compose run --rm backend alembic upgrade head
 ```
 
-Контейнер начинает принимать запросы только после успешного применения миграций. Перед
-этим Compose ожидает healthy-состояние PostgreSQL через `depends_on`.
+Контейнер начинает принимать запросы только после успешного применения миграций вручную.
+Перед этим Compose ожидает healthy-состояние PostgreSQL через `depends_on`.
 
 Текущая схема рассчитана на один сервис `backend`. При горизонтальном масштабировании
-миграцию необходимо вынести в отдельный одноразовый deployment step, чтобы несколько
+миграцию необходимо вынести в отдельный one-shot deployment step, чтобы несколько
 реплик не выполняли `alembic upgrade head` параллельно:
 
 ```text
@@ -302,7 +310,7 @@ Infrastructure не содержит копий исходного кода back
                               └────┬────┘
                   ┌────────────────┴───────────────┐
                   │                                │
-          / и frontend routes               /api и /openapi.json
+          / и frontend routes               /api, /uploads и контракт FastAPI
                   │                                │
                   ▼                                ▼
             ┌──────────┐                     ┌──────────┐
@@ -319,45 +327,65 @@ Infrastructure не содержит копий исходного кода back
                                            postgres_data
 ```
 
-Compose создаёт четыре сервиса:
+Compose создаёт пять сервисов:
 
 | Сервис | Назначение | Публичный доступ |
 |---|---|---|
-| `nginx` | Единая точка входа и reverse proxy | `80:80` |
-| `frontend` | Production frontend | Только через Nginx |
-| `backend` | FastAPI и Alembic | Только через Nginx |
+| `nginx` | Единая точка входа и reverse proxy | `${HTTP_PORT:-80}:80` |
+| `frontend` | Production frontend | Только через Nginx (`expose 7000`) |
+| `backend` | FastAPI | Только через Nginx (`expose 8000`) |
+| `bot` | Telegram-бот (polling) | Только внутри сети |
 | `postgres` | PostgreSQL 18 | Не публикуется наружу |
 
-Backend и PostgreSQL не имеют `ports`, поэтому доступны только другим контейнерам внутри
-Compose-сети. Данные PostgreSQL сохраняются в named volume `postgres_data`.
+Backend, frontend и bot не имеют опубликованных портов, поэтому доступны только другим
+контейнерам внутри Compose-сети. Данные PostgreSQL сохраняются в named volume
+`postgres_data`, загруженные файлы товаров — в `product_uploads`.
 
 ### Маршрутизация Nginx
 
 | Внешний путь | Upstream | Назначение |
 |---|---|---|
 | `/` | `frontend:7000` | Frontend и его маршруты |
-| `/api...` | `backend:8000` | Версионированный FastAPI API |
-| `/openapi.json` | `backend:8000/openapi.json` | Точный маршрут OpenAPI JSON |
+| `/api/...` | `backend:8000` | Версионированный FastAPI API |
+| `/uploads/...` | `backend:8000` | Загруженные файлы товаров |
+| `^/(docs\|redoc\|openapi\.json)$` | `backend:8000` | Интерактивный контракт FastAPI |
 
 Проксирование `/api` сохраняет исходный URI, поэтому запрос
 `/api/v1/health/live` приходит в backend с тем же путём. Это соответствует URL-версии API,
-описанной выше. Отдельный exact-match для `/openapi.json` не позволяет SPA fallback
-frontend вернуть HTML вместо OpenAPI JSON.
+описанной выше. Регулярный маршрут `^/(docs|redoc|openapi\.json)$` охватывает и точный
+`/openapi.json`, и документацию, поэтому SPA fallback frontend не может вернуть HTML вместо
+OpenAPI JSON. Публичная проверка всего пути прокси вынесена в отдельный `location = /healthz`,
+который проксирует `backend:8000/api/v1/health/live`.
 
 ### Порядок запуска
 
 1. PostgreSQL запускается и проходит `pg_isready` healthcheck.
 2. Backend ожидает healthy PostgreSQL.
-3. Backend применяет `alembic upgrade head`.
-4. Backend запускает Uvicorn на внутреннем порту `8000`.
+3. Nginx ожидает healthy-состояния backend и frontend (`depends_on` с `condition: service_healthy`)
+   перед тем, как начать принимать внешние запросы на порту `${HTTP_PORT:-80}`.
+4. Backend запускает Uvicorn на внутреннем порту `8000` (команда `CMD` образа).
 5. Healthcheck backend проверяет `/api/v1/health/live`.
-6. Nginx принимает внешние запросы на порту `80` и направляет их нужному сервису.
 
-В текущем Compose `nginx` зависит от запуска frontend и backend, но не ожидает их
-healthcheck. Фактическую готовность всей системы после deployment проверяет Jenkins smoke
-stage.
+Фактическую готовность всей системы после deployment проверяет внешний `/healthz`
+(Nginx → `backend:8000/api/v1/health/live`).
 
-## Конфигурация окружения
+## Запуск миграций
+
+Production-образ backend (собирается из `Dockerfile`, используется в
+`market-infrastructure`) запускает только Uvicorn:
+`CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]`. Alembic в команде
+старта контейнера **не выполняется** — в текущем `market-infrastructure/docker-compose.yml`
+миграции не прогоняются автоматически перед подъёмом сервиса. Применение схемы лежит на
+операторе (отдельный `alembic upgrade head` в контейнере backend перед первым деплоем) либо
+должно быть добавлено как one-shot шаг.
+
+Локальный `compose.yaml` самого backend-репозитория ведёт себя иначе: его сервис `api`
+стартует командой `alembic upgrade head && uvicorn app.main:app ...`, то есть применяет
+миграции сам при запуске. Этот файл предназначен только для разработки/локальной отладки и
+не используется продакшн-стеком из `market-infrastructure`.
+
+Контейнер начинает принимать запросы сразу после старта Uvicorn; готовность БД к моменту
+запуска обеспечивается порядком `depends_on` (backend ждёт healthy PostgreSQL).
 
 Infrastructure передаёт backend следующие группы настроек:
 
@@ -378,71 +406,66 @@ Infrastructure передаёт backend следующие группы наст
 
 ## Общий Jenkins pipeline
 
-`market-infrastructure/Jenkinsfile` управляет поставкой всех трёх репозиториев:
+`market-infrastructure/Jenkinsfile` управляет поставкой всех трёх репозиториев (backend,
+frontend, bot) плюс собственной инфраструктуры. Текущий pipeline содержит пять стадий:
 
 ```text
 Checkout
-  → Validate Compose
-  → Build images
-  → Trivy security scan
-  → advisory AI security review
-  → Security gate
-  → Deploy
-  → Smoke test
+  → Validate (docker compose config --quiet)
+  → Build (docker compose build)
+  → Deploy (docker compose up -d --remove-orphans)
+  → Status (docker compose ps)
 ```
+
+Безопасность и проверки кода не входят в текущий Jenkinsfile: сканирование уязвимостей,
+AI security review, security gate и smoke-тесты были удалены из пайплайна. Локальную
+проверку качества (Ruff, mypy, pytest) выполняет разработчик перед коммитом, а не CI.
 
 ### Checkout
 
-Pipeline отключает автоматический checkout (`skipDefaultCheckout(true)`) и явно создаёт
-структуру:
+Pipeline отключает автоматический checkout (`skipDefaultCheckout(true)`,
+`disableConcurrentBuilds()`) и явно создаёт структуру:
 
 ```text
 $WORKSPACE/
-├── market-infrastructure/
-├── market-backend/
-└── market-frontend/
+├── market-infrastructure/   # git@github.com:Wilpdrake/market-infrastructure.git
+├── market-backend/          # git@github.com:Wilpdrake/market-backend.git
+├── market-bot/              # git@github.com:Wilpdrake/market-bot.git
+└── market-frontend/         # git@github.com:yushiri/market-order.git
 ```
 
 Это гарантирует, что относительные Compose build contexts работают одинаково локально и в
-CI. Для каждого репозитория в Telegram-статусе фиксируются ветка, короткий SHA и заголовок
-последнего коммита.
+CI. Для каждого репозитория Jenkins клонирует ветку `*/main`. Frontend загружается из
+репозитория `git@github.com:yushiri/market-order.git`, но помещается в каталог
+`market-frontend`, чтобы путь совпадал с Compose-контекстом.
 
 ### Validate и Build
 
-Compose-модель проверяется командой `docker compose ... config --quiet`, после чего
-собираются production targets backend и frontend. Имя Compose-проекта закреплено как
-`market`, чтобы смена Jenkins workspace не создавала второй параллельный стек.
+Compose-модель проверяется командой `docker compose config --quiet`, после чего
+собираются production targets (`target: production`) backend, frontend и bot. Имя
+Compose-проекта закреплено как `market` (`COMPOSE_PROJECT_NAME = 'market'`), чтобы смена
+Jenkins workspace не создавала второй параллельный стек.
 
-### Security
+### Deploy и Status
 
-Trivy сканирует общий workspace на уязвимости, секреты и ошибки конфигурации. Critical
-уязвимости или найденные секреты блокируют deployment. AI review формирует дополнительный
-advisory-отчёт: его сбой переводит сборку в `UNSTABLE`, но детерминированный security gate
-остаётся отдельным этапом.
-
-### Deploy и проверка готовности
-
-Deployment выполняет `docker compose up -d --remove-orphans`. После него Jenkins проверяет
-не только HTTP-код главной страницы, но и критический путь backend:
-
-- `/` — доступность frontend;
-- `/api/v1/health/live` — готовность FastAPI;
-- `/api/v1/products` — запрос, использующий базу данных;
-- `/openapi.json` — JSON содержит поле `openapi` и маршрут `/api/v1/health/live`.
-
-Такая проверка не принимает HTML от SPA за корректный ответ backend. При неуспехе Jenkins
-выводит только безопасный статус контейнеров, не раскрывая environment или секреты.
-
-### Telegram-уведомление
-
-Pipeline создаёт одно компактное Telegram-сообщение и редактирует его по мере прохождения
-этапов. В нём отображаются инициатор, версии трёх репозиториев, текущая стадия, результаты
-security-проверок и статус всех стадий. Ошибка уведомления не останавливает deployment.
+Deployment выполняет `docker compose up -d --remove-orphans`, после чего стадия `Status`
+выводит `docker compose ps`. В текущем pipeline отдельной проверки готовности
+(HTTP-запросов к `/healthz` или `/api/v1/health/live`) нет — за готовностью наблюдает
+оператор.
 
 ## Текущие инфраструктурные ограничения
 
-Текущий backend запускает Alembic внутри команды старта контейнера. Это допустимо для
-одной реплики, но перед масштабированием миграции нужно сделать отдельным one-shot этапом.
+Продакшн-стек в `market-infrastructure` не запускает Alembic автоматически — схема
+применяется оператором вручную (`docker compose run --rm backend alembic upgrade head`)
+перед первым деплоем. Это приемлемо для одной реплики, но перед масштабированием миграции
+нужно вынести в отдельный one-shot этап. Локальный `compose.yaml` backend-репозитория,
+напротив, стартует миграции сам (`alembic upgrade head && uvicorn`).
+
+Собственный `Jenkinsfile` backend-репозитория выполняет Ruff, mypy и `pytest -q`, однако
+каталог `tests/` пока отсутствует, поэтому шаг `Tests` и проверка `ruff ... tests` падают —
+перед сборкой production-образа нужно добавить тесты. Общий `market-infrastructure/Jenkinsfile`
+ограничивается Checkout → Validate → Build → Deploy → Status и не содержит проверок
+готовности, сканирования уязвимостей или тестов.
 
 ## Добавление нового модуля
 
@@ -463,7 +486,8 @@ app/presentation/api/v1/orders.py
 1. добавить ORM-модель и миграцию Alembic, если модулю нужна БД;
 2. зарегистрировать реализацию репозитория и сервис в `app/ioc.py`;
 3. подключить HTTP-роутер в `app/presentation/api/v1/router.py`;
-4. добавить unit-тесты сервиса и контрактные тесты API.
+4. покрыть сервис unit-тестами, а API — контрактными тестами (каталог `tests/` пока не
+   создан; новые модули следует сопровождать тестами в нём).
 
 Такой подход расширяет модульный монолит без дублирования слоёв и сохраняет возможность
 выделить модуль в отдельный сервис позднее.

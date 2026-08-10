@@ -31,13 +31,22 @@ def test_admin_api_is_exposed_in_openapi() -> None:
     assert "/api/v1/admin/users/{user_id}" in paths
     assert "/api/v1/admin/products" in paths
     assert "/api/v1/admin/products/{product_id}" in paths
+    assert "/api/v1/tags" in paths
+    assert "/api/v1/admin/tags" in paths
+    assert "/api/v1/admin/tags/{tag_id}" in paths
+    assert "/api/v1/admin/orders" in paths
+    assert "/api/v1/admin/orders/{order_id}" in paths
+    assert "/api/v1/admin/audit-log" in paths
+    assert "/api/v1/admin/settings/audit-logging" in paths
 
     models = schema["components"]["schemas"]
     user_input = models["AdminUserCreateRequest"]["properties"]
     user_output = models["AdminUserResponse"]["properties"]
     product_output = models["ProductResponse"]["properties"]
+    tag_output = models["TagResponse"]["properties"]
 
     assert {"password", "password_confirmation"} <= user_input.keys()
+    assert {"uuid", "name", "slug", "description", "created_at", "updated_at"} == tag_output.keys()
     assert "password" not in user_output
     assert {
         "uuid",
@@ -68,6 +77,7 @@ def test_admin_api_is_exposed_in_openapi() -> None:
         "wb_price",
         "created_by",
         "updated_by",
+        "tags",
         "created_at",
         "updated_at",
     } == product_output.keys()

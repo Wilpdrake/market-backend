@@ -3,16 +3,31 @@ from uuid import UUID
 
 from app.application.products.models import CreateProduct, UpdateProduct
 from app.application.products.ports import ProductRepository
+from app.application.tags.ports import TagRepository
 from app.application.users.exceptions import NotFoundError
 from app.domain.products.models import Product
+from app.domain.tags.models import Tag
 from app.models import replace_model as replace
 
 
 class ProductService:
-    def __init__(self, repository: ProductRepository) -> None:
+    def __init__(self, repository: ProductRepository, tags: TagRepository | None = None) -> None:
         self.repository = repository
+        self.tags = tags
+
+    async def _resolve_tags(self, tag_ids: tuple[UUID, ...]) -> list[Tag]:
+        if not tag_ids:
+            return []
+        if self.tags is None:
+            raise NotFoundError("Tags are not available")
+        unique_ids = tuple(dict.fromkeys(tag_ids))
+        tags = await self.tags.list_by_ids(unique_ids)
+        if len(tags) != len(unique_ids):
+            raise NotFoundError("One or more tags not found")
+        return list(tags)
 
     async def create(self, data: CreateProduct, *, actor_id: UUID) -> Product:
+        tags = await self._resolve_tags(data.tag_ids)
         return await self.repository.add(
             Product(
                 title=data.title,
@@ -22,6 +37,7 @@ class ProductService:
                 price=data.price,
                 ozon_price=data.ozon_price,
                 wb_price=data.wb_price,
+                tags=tags,
                 created_by=actor_id,
                 updated_by=actor_id,
             )
@@ -44,6 +60,7 @@ class ProductService:
         actor_id: UUID,
     ) -> Product:
         product = await self.get(product_id)
+        tags = await self._resolve_tags(data.tag_ids) if data.tag_ids is not None else product.tags
         return await self.repository.save(
             replace(
                 product,
@@ -90,6 +107,7 @@ class ProductService:
                     if data.wb_price is not None
                     else product.wb_price
                 ),
+                tags=tags,
                 updated_by=actor_id,
                 updated_at=datetime.now(UTC),
             )

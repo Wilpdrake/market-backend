@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import UUID
 
 from app.models import CommandModel
 
@@ -11,6 +12,7 @@ class CreateProduct(CommandModel):
     price: Decimal | None = None
     ozon_price: Decimal | None = None
     wb_price: Decimal | None = None
+    tag_ids: tuple[UUID, ...] = ()
 
 
 class UpdateProduct(CommandModel):
@@ -21,4 +23,5 @@ class UpdateProduct(CommandModel):
     price: Decimal | None = None
     ozon_price: Decimal | None = None
     wb_price: Decimal | None = None
+    tag_ids: tuple[UUID, ...] | None = None
     clear_fields: frozenset[str] = frozenset()

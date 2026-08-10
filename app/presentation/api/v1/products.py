@@ -16,6 +16,7 @@ from pydantic import ConfigDict, Field
 from app.application.products.services import ProductService
 from app.domain.products.models import Product
 from app.models import ApiResponseModel
+from app.presentation.api.v1.admin.schemas import TagSummary
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -33,6 +34,7 @@ class PublicProductResponse(ApiResponseModel):
     price: Decimal | None
     ozon_price: Decimal | None
     wb_price: Decimal | None
+    tags: list[TagSummary]
     created_at: datetime
     updated_at: datetime
 

@@ -30,9 +30,11 @@ Before changing `x-status` from `planned` to `implemented`, the API review shoul
 - fiscal receipt (54-FZ) requirements;
 - success/failure frontend URLs and refund policy.
 
-After approval, backend tests must compare the relevant paths and component schemas from the
-FastAPI-generated `/openapi.json` with this contract. Breaking changes require explicit API
-review rather than silent edits.
+After approval, the relevant paths and component schemas from the FastAPI-generated
+`/openapi.json` should be compared with this contract (for example via a CI check or a manual
+review step). Breaking changes require explicit API review rather than silent edits. Note:
+the backend repository does not yet contain such an automated comparison test, so the
+contract is currently kept in sync manually.
 
 Architecture documentation remains in [`structure.md`](structure.md), while Pydantic model
 conventions remain in [`pydantic-models.md`](pydantic-models.md).

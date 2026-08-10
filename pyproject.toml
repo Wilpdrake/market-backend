@@ -10,6 +10,8 @@ dependencies = [
     "dishka>=1.7,<2",
     "email-validator>=2.2,<3",
     "fastapi>=0.115,<1",
+    # Runtime HTTP client for the T-Bank acquiring adapter.
+    "httpx>=0.28,<1",
     "pwdlib[argon2]>=0.2,<1",
     "pydantic-settings>=2.10,<3",
     "pyjwt>=2.10,<3",
@@ -20,11 +22,11 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28,<1",
     "mypy>=1.15,<2",
     "pytest>=8.3,<9",
     "pytest-asyncio>=0.26,<1",
     "ruff>=0.11,<1",
+    "types-PyYAML>=6.0.12.20250822",
 ]
 
 [tool.pytest.ini_options]

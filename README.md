@@ -14,7 +14,8 @@
 - подтверждение email и телефона одноразовыми токенами (в БД хранится только SHA-256);
 - привязка Telegram через deep link и защищённый webhook;
 - PostgreSQL, SQLAlchemy 2 async, Alembic, Dishka;
-- Docker Compose и Jenkins pipeline с Ruff, mypy, pytest, build и deploy.
+- локальный `compose.yaml` (backend + PostgreSQL) и собственный `Jenkinsfile` (Ruff, mypy,
+  pytest, build и deploy). Качество кода проверяет CI до сборки production-образа.
 
 Единый контракт публичного, административного и планируемого HTTP API находится в
 [`openapi/openapi.yaml`](openapi/openapi.yaml).
@@ -37,21 +38,35 @@ alembic                    миграции
 
 ## Локальный запуск
 
+Локальный стек (backend + PostgreSQL) описан в собственном `compose.yaml` репозитория.
+Он стартует миграции и Uvicorn командой `alembic upgrade head && uvicorn app.main:app`.
+Переменные окружения (например `SECRET_KEY`, `POSTGRES_PASSWORD`) передаются из shell —
+отдельного `.env.example` в backend-репозитории нет:
+
 ```bash
-cp .env.example .env
-# Обязательно замените SECRET_KEY и POSTGRES_PASSWORD.
+export SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(32))')"
+export POSTGRES_PASSWORD="change_me_strong_password"
 docker compose up --build
 ```
 
-Проверка: `curl http://localhost/api/v1/health/live`.
+Проверка (compose публикует порт `${APP_PORT:-80}` → backend `8000`):
 
-Без Docker:
+```bash
+curl http://localhost/api/v1/health/live
+```
+
+Без Docker (требуется локальный PostgreSQL):
 
 ```bash
 uv sync --dev
 uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
+
+При таком запуске API доступен напрямую на `http://localhost:8000/api/v1/health/live`.
+
+Полный продакшн-стек (Nginx + frontend + backend + bot + PostgreSQL) собирается из
+репозитория `market-infrastructure`, где лежат общий `docker-compose.yml` и `.env.example`.
 
 ## Проверки
 
@@ -63,6 +78,11 @@ uv run pytest -q
 uv run alembic upgrade head --sql
 ```
 
+Внимание: каталог `tests/` в репозитории **пока отсутствует**. Из-за этого локальный
+`uv run pytest -q` и шаг `Tests` в `Jenkinsfile` (`uv run pytest -q`, а также
+`ruff check ... tests`) сейчас завершаются ошибкой. Новые изменения следует сопровождать
+тестами в `tests/`, иначе CI не пройдёт.
+
 ## Подтверждения
 
 `LoggingVerificationNotifier` предназначен для development: он выводит email/SMS токены
@@ -73,7 +93,15 @@ uv run alembic upgrade head --sql
 
 ## Jenkins
 
-Pipeline запускает проверки в одноразовом development image, собирает production image и
-для ветки `main` выполняет `docker compose up -d`. Jenkins agent должен иметь доступ к Docker,
-а production secrets должны быть созданы на узле Jenkins в `.env` — в репозиторий они не
-добавляются.
+Собственный `Jenkinsfile` репозитория запускает четыре стадии: сборка development-образа,
+`Quality` (параллельно Ruff, mypy и `pytest -q` через `docker run`), сборка production-образа
+(`docker compose build api`) и, для ветки `main`, `docker compose up -d --remove-orphans`.
+Тестовый образ удаляется в `post`-шаге.
+
+Из-за отсутствия каталога `tests/` шаг `Tests` (`uv run pytest -q`) и проверка
+`ruff check ... tests` сейчас падают — их нужно починить добавлением тестов.
+
+Production-секреты (`SECRET_KEY`, `POSTGRES_PASSWORD`, `TELEGRAM_BOT_TOKEN` и др.) задаются
+в shell/credentials перед `docker compose up`; в репозиторий они не добавляются. Полный
+многосервисный деплой (Nginx, frontend, bot) выполняется отдельным пайплайном в
+`market-infrastructure`.

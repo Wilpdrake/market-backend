@@ -13,9 +13,21 @@ venv/
 .uv/
 
 # OS / editor
-.DS_Store
+.DS_Store/
 .idea/
 
 # Test / coverage output
 htmlcov/
 .coverage
+
+# VCS — never bake the repo history into an image
+.git/
+.gitignore
+
+# Host / CI / docs — not needed inside any image
+compose.yaml
+Jenkinsfile
+README.md
+.env.example
+.pre-commit-config.yaml
+openapi/

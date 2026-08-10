@@ -59,12 +59,15 @@ def test_http_models_reject_unknown_json_fields() -> None:
 
 
 @pytest.mark.parametrize("model_type", [ProductCreateRequest, ProductUpdateRequest])
-@pytest.mark.parametrize("temporary_field", ["tag_ids", "tags_ids"])
-def test_product_requests_temporarily_ignore_unimplemented_tag_fields(
+def test_product_requests_validate_implemented_tag_ids(
     model_type: type[ProductCreateRequest] | type[ProductUpdateRequest],
-    temporary_field: str,
 ) -> None:
-    request = model_type.model_validate({"title": "Plate", temporary_field: [1, "legacy"]})
+    tag_id = UUID("00000000-0000-0000-0000-000000000123")
+    request = model_type.model_validate({"title": "Plate", "tag_ids": [str(tag_id)]})
 
-    assert temporary_field not in request.model_dump()
-    CreateProduct(**request.model_dump())
+    assert request.tag_ids == [tag_id]
+    if model_type is ProductCreateRequest:
+        CreateProduct(**request.model_dump())
+
+    with pytest.raises(ValidationError):
+        model_type.model_validate({"title": "Plate", "tags_ids": [str(tag_id)]})

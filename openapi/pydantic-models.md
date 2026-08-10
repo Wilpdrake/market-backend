@@ -73,11 +73,15 @@ JSON
 ## Проверка
 
 ```bash
-uv run pytest -q tests/test_pydantic_models.py
-uv run pytest -q tests/test_api_contract.py
 uv run mypy app
 uv run ruff check app tests alembic
+uv run pytest -q
 ```
+
+Каталог `tests/` в репозитории пока не создан, поэтому `uv run pytest -q` (и шаг `Tests` в
+`Jenkinsfile`) сейчас падают — ожидаемые файлы `tests/test_pydantic_models.py`,
+`tests/test_api_contract.py` и прочие ещё не написаны. Валидацию, сериализацию и
+OpenAPI-контракт следует фиксировать в тестах при появлении каталога `tests/`.
 
 OpenAPI доступен по `/openapi.json`, Swagger UI — по `/docs`.
 

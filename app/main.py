@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.application.payments.exceptions import PaymentProviderError
 from app.application.users.exceptions import (
     ApplicationError,
     ConflictError,
@@ -99,6 +100,11 @@ def create_app() -> FastAPI:
         elif isinstance(error, ConflictError):
             status_code = 409
         return JSONResponse(status_code=status_code, content={"detail": str(error)})
+
+    @app.exception_handler(PaymentProviderError)
+    async def payment_provider_error(_: Request, error: PaymentProviderError) -> JSONResponse:
+        """The acquiring provider failed; 502 keeps it distinct from a client-side mistake."""
+        return JSONResponse(status_code=502, content={"detail": str(error)})
 
     return app
 

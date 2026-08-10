@@ -2,9 +2,9 @@ openapi: 3.1.0
 info:
   title: Market Backend API
   version: 0.1.0
-  description: 'Unified HTTP API contract for Market Backend. Operations marked with `x-status: implemented`
-    are exposed by the current FastAPI application; operations marked with `x-status: planned` are contract-first
-    proposals and are not available yet.'
+  description: 'Unified HTTP API contract for Market Backend. Operations marked with `x-status: implemented` are
+    exposed by the current FastAPI application; operations marked with `x-status: planned` are contract-first proposals
+    and are not available yet.'
 paths:
   /api/v1/admin/auth/token:
     post:
@@ -41,7 +41,7 @@ paths:
       parameters:
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -87,7 +87,7 @@ paths:
           title: Limit
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -118,7 +118,7 @@ paths:
       parameters:
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -160,7 +160,7 @@ paths:
           title: User Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -195,7 +195,7 @@ paths:
           title: User Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -236,7 +236,7 @@ paths:
           title: User Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -278,7 +278,7 @@ paths:
           title: Limit
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -309,7 +309,7 @@ paths:
       parameters:
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -345,7 +345,7 @@ paths:
           title: Product Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -380,7 +380,7 @@ paths:
           title: Product Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -415,7 +415,7 @@ paths:
           title: Product Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -424,6 +424,362 @@ paths:
       responses:
         '204':
           description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/tags:
+    get:
+      tags:
+      - admin
+      summary: List Tags
+      operationId: list_tags_api_v1_admin_tags_get
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+                title: Response List Tags Api V1 Admin Tags Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    post:
+      tags:
+      - admin
+      summary: Create Tag
+      operationId: create_tag_api_v1_admin_tags_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/tags/{tag_id}:
+    patch:
+      tags:
+      - admin
+      summary: Update Tag
+      operationId: update_tag_api_v1_admin_tags__tag_id__patch
+      parameters:
+      - name: tag_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Tag Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    delete:
+      tags:
+      - admin
+      summary: Delete Tag
+      operationId: delete_tag_api_v1_admin_tags__tag_id__delete
+      parameters:
+      - name: tag_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Tag Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/orders:
+    get:
+      tags:
+      - admin
+      summary: List Orders
+      operationId: list_orders_api_v1_admin_orders_get
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 100
+          title: Limit
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CrmOrderResponse'
+                title: Response List Orders Api V1 Admin Orders Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/orders/{order_id}:
+    patch:
+      tags:
+      - admin
+      summary: Update Order Status
+      operationId: update_order_status_api_v1_admin_orders__order_id__patch
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrmOrderUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrmOrderResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/audit-log:
+    get:
+      tags:
+      - admin
+      summary: List Audit Log
+      operationId: list_audit_log_api_v1_admin_audit_log_get
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          title: From
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+          title: To
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 100
+          title: Limit
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLogResponse'
+                title: Response List Audit Log Api V1 Admin Audit Log Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/admin/settings/audit-logging:
+    get:
+      tags:
+      - admin
+      summary: Get Audit Logging
+      operationId: get_audit_logging_api_v1_admin_settings_audit_logging_get
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLoggingSetting'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    patch:
+      tags:
+      - admin
+      summary: Set Audit Logging
+      operationId: set_audit_logging_api_v1_admin_settings_audit_logging_patch
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditLoggingSetting'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLoggingSetting'
         '422':
           description: Validation Error
           content:
@@ -519,6 +875,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
       x-status: implemented
+  /api/v1/tags:
+    get:
+      tags:
+      - tags
+      summary: List Tags
+      operationId: list_tags_api_v1_tags_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+                type: array
+                title: Response List Tags Api V1 Tags Get
+      x-status: implemented
   /api/v1/auth/register:
     post:
       tags:
@@ -580,7 +953,7 @@ paths:
       parameters:
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -623,7 +996,7 @@ paths:
           title: Limit
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -662,7 +1035,7 @@ paths:
           title: User Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -697,7 +1070,7 @@ paths:
           title: User Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -738,7 +1111,7 @@ paths:
           title: User Id
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -763,7 +1136,7 @@ paths:
       parameters:
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -821,7 +1194,7 @@ paths:
       parameters:
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -853,7 +1226,7 @@ paths:
       parameters:
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -888,7 +1261,7 @@ paths:
       parameters:
       - name: Authorization
         in: header
-        required: true
+        required: false
         schema:
           anyOf:
           - type: string
@@ -939,6 +1312,267 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
       x-status: implemented
+  /api/v1/orders:
+    post:
+      tags:
+      - orders
+      summary: Create Order
+      operationId: create_order_api_v1_orders_post
+      parameters:
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+    get:
+      tags:
+      - orders
+      summary: List Orders
+      operationId: list_orders_api_v1_orders_get
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 100
+          title: Limit
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderResponse'
+                title: Response List Orders Api V1 Orders Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/orders/{order_id}:
+    get:
+      tags:
+      - orders
+      summary: Get Order
+      operationId: get_order_api_v1_orders__order_id__get
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/payments/tbank/options:
+    get:
+      tags:
+      - payments
+      summary: List Tbank Payment Options
+      description: Public payment methods. Only stable slugs are exposed, never a TerminalKey.
+      operationId: list_tbank_payment_options_api_v1_payments_tbank_options_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TBankPaymentOptionResponse'
+                type: array
+                title: Response List Tbank Payment Options Api V1 Payments Tbank Options Get
+      x-status: implemented
+  /api/v1/orders/{order_id}/payments/tbank:
+    post:
+      tags:
+      - payments
+      summary: Create Tbank Payment
+      operationId: create_tbank_payment_api_v1_orders__order_id__payments_tbank_post
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTBankPaymentRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/orders/{order_id}/payment:
+    get:
+      tags:
+      - payments
+      summary: Get Order Payment
+      operationId: get_order_payment_api_v1_orders__order_id__payment_get
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/orders/{order_id}/payment/cancel:
+    post:
+      tags:
+      - payments
+      summary: Cancel Order Payment
+      operationId: cancel_order_payment_api_v1_orders__order_id__payment_cancel_post
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Order Id
+      - name: Authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-status: implemented
+  /api/v1/payments/tbank/webhook:
+    post:
+      tags:
+      - payments
+      summary: Receive Tbank Webhook
+      operationId: receive_tbank_webhook_api_v1_payments_tbank_webhook_post
+      responses:
+        '200':
+          description: Successful Response
+      x-status: implemented
   /api/v1/auth/google:
     post:
       tags:
@@ -968,235 +1602,6 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/payments/tbank/options:
-    get:
-      tags:
-      - payments
-      operationId: listTBankPaymentOptions
-      summary: List public enabled T-Bank payment options
-      x-status: planned
-      security: []
-      responses:
-        '200':
-          description: Payment options configured by the backend
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TBankPaymentOption'
-              example:
-              - id: tbank-card
-                title: Банковская карта
-                kind: card
-                enabled: true
-              - id: tbank-sbp
-                title: СБП
-                kind: sbp
-                enabled: true
-  /api/v1/orders:
-    post:
-      tags:
-      - orders
-      operationId: createOrder
-      summary: Create an order using authoritative product prices
-      description: The backend calculates every price and the total; clients never submit the amount.
-      x-status: planned
-      security:
-      - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateOrderRequest'
-      responses:
-        '201':
-          description: Order created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-  /api/v1/orders/{order_id}:
-    parameters:
-    - $ref: '#/components/parameters/OrderId'
-    get:
-      tags:
-      - orders
-      operationId: getOrder
-      summary: Get an order owned by the current user
-      x-status: planned
-      security:
-      - bearerAuth: []
-      responses:
-        '200':
-          description: Current order state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-  /api/v1/orders/{order_id}/payments/tbank:
-    parameters:
-    - $ref: '#/components/parameters/OrderId'
-    post:
-      tags:
-      - payments
-      operationId: createTBankPayment
-      summary: Initialize a T-Bank payment for an order
-      description: '`idempotency_key` identifies one frontend payment attempt. A network retry with
-
-        the same key returns the same payment and must not create another provider payment.
-
-        '
-      x-status: planned
-      security:
-      - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateTBankPaymentRequest'
-      responses:
-        '200':
-          description: Existing payment returned for the same idempotency key
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Payment'
-        '201':
-          description: Payment initialized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Payment'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '502':
-          $ref: '#/components/responses/ProviderUnavailable'
-  /api/v1/orders/{order_id}/payment:
-    parameters:
-    - $ref: '#/components/parameters/OrderId'
-    get:
-      tags:
-      - payments
-      operationId: getOrderPayment
-      summary: Get the current payment for an order
-      description: The backend may reconcile a pending local payment with T-Bank before responding.
-      x-status: planned
-      security:
-      - bearerAuth: []
-      responses:
-        '200':
-          description: Current payment state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Payment'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '502':
-          $ref: '#/components/responses/ProviderUnavailable'
-  /api/v1/orders/{order_id}/payment/cancel:
-    parameters:
-    - $ref: '#/components/parameters/OrderId'
-    post:
-      tags:
-      - payments
-      operationId: cancelOrderPayment
-      summary: Cancel an unpaid payment
-      x-status: planned
-      security:
-      - bearerAuth: []
-      responses:
-        '200':
-          description: Cancelled payment
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Payment'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '502':
-          $ref: '#/components/responses/ProviderUnavailable'
-  /api/v1/payments/tbank/webhook:
-    post:
-      tags:
-      - provider-webhooks
-      operationId: receiveTBankWebhook
-      summary: Receive and verify a T-Bank payment notification
-      description: Provider-only operation. Browser clients must never call it.
-      x-status: planned
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-              description: Provider-specific payload validated against the T-Bank contract by backend.
-      responses:
-        '200':
-          description: Notification accepted, including an already processed notification
-          content:
-            text/plain:
-              schema:
-                type: string
-                const: OK
-              example: OK
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          description: Invalid provider signature
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
 components:
   schemas:
     AdminLoginRequest:
@@ -1583,6 +1988,11 @@ components:
             pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           - type: 'null'
           title: Wb Price
+        tags:
+          items:
+            $ref: '#/components/schemas/TagSummary'
+          type: array
+          title: Tags
         created_by:
           type: string
           format: uuid
@@ -1610,6 +2020,7 @@ components:
       - price
       - ozon_price
       - wb_price
+      - tags
       - created_by
       - updated_by
       - created_at
@@ -1659,6 +2070,11 @@ components:
             pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           - type: 'null'
           title: Wb Price
+        tags:
+          items:
+            $ref: '#/components/schemas/TagSummary'
+          type: array
+          title: Tags
         created_at:
           type: string
           format: date-time
@@ -1678,6 +2094,7 @@ components:
       - price
       - ozon_price
       - wb_price
+      - tags
       - created_at
       - updated_at
       title: PublicProductResponse
@@ -1926,247 +2343,63 @@ components:
           minLength: 1
           description: Google ID token returned by Google Identity Services.
     CreateOrderItemRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - product_id
-      - quantity
       properties:
         product_id:
           type: string
           format: uuid
+          title: Product Id
         quantity:
           type: integer
-          minimum: 1
-    Customer:
-      type: object
+          maximum: 1000.0
+          minimum: 1.0
+          title: Quantity
       additionalProperties: false
+      type: object
       required:
-      - name
-      - email
-      - phone
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 200
-        email:
-          type: string
-          format: email
-          maxLength: 320
-        phone:
-          type: string
-          minLength: 1
-          maxLength: 32
+      - product_id
+      - quantity
+      title: CreateOrderItemRequest
     CreateOrderRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - customer
       properties:
         items:
-          type: array
-          minItems: 1
-          maxItems: 100
           items:
             $ref: '#/components/schemas/CreateOrderItemRequest'
-        customer:
-          $ref: '#/components/schemas/Customer'
-        comment:
-          type:
-          - string
-          - 'null'
-          maxLength: 2000
-          default: null
-    OrderItem:
-      type: object
-      additionalProperties: false
-      required:
-      - product_id
-      - title
-      - quantity
-      - unit_price
-      - total
-      properties:
-        product_id:
-          type: string
-          format: uuid
-        title:
-          type: string
-        quantity:
-          type: integer
-          minimum: 1
-        unit_price:
-          $ref: '#/components/schemas/Money'
-        total:
-          $ref: '#/components/schemas/Money'
-    Order:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - status
-      - items
-      - total
-      - currency
-      - customer
-      - comment
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          format: uuid
-        status:
-          $ref: '#/components/schemas/OrderStatus'
-        items:
           type: array
-          items:
-            $ref: '#/components/schemas/OrderItem'
-        total:
-          $ref: '#/components/schemas/Money'
-        currency:
-          $ref: '#/components/schemas/Currency'
+          maxItems: 100
+          minItems: 1
+          title: Items
         customer:
-          $ref: '#/components/schemas/Customer'
+          $ref: '#/components/schemas/CustomerRequest'
         comment:
-          type:
-          - string
-          - 'null'
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    OrderStatus:
-      type: string
-      enum:
-      - new
-      - awaiting_payment
-      - paid
-      - payment_failed
-      - cancelled
-      - refunded
-    TBankPaymentOption:
-      type: object
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Comment
       additionalProperties: false
+      type: object
       required:
-      - id
-      - title
-      - kind
-      - enabled
-      properties:
-        id:
-          type: string
-          minLength: 1
-          description: Stable public ID; never a T-Bank TerminalKey.
-        title:
-          type: string
-          minLength: 1
-        kind:
-          $ref: '#/components/schemas/PaymentKind'
-        enabled:
-          type: boolean
-    PaymentKind:
-      type: string
-      enum:
-      - card
-      - sbp
+      - items
+      - customer
+      title: CreateOrderRequest
     CreateTBankPaymentRequest:
-      type: object
+      properties:
+        payment_option_id:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Payment Option Id
+        idempotency_key:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Idempotency Key
       additionalProperties: false
+      type: object
       required:
       - payment_option_id
       - idempotency_key
-      properties:
-        payment_option_id:
-          type: string
-          minLength: 1
-        idempotency_key:
-          type: string
-          format: uuid
-    PaymentConfirmation:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      - url
-      properties:
-        type:
-          type: string
-          enum:
-          - redirect
-          - qr
-        url:
-          type: string
-          format: uri
-    Payment:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - order_id
-      - provider
-      - payment_option_id
-      - status
-      - amount
-      - currency
-      - confirmation
-      - failure_message
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          format: uuid
-        order_id:
-          type: string
-          format: uuid
-        provider:
-          type: string
-          const: tbank
-        payment_option_id:
-          type: string
-        status:
-          $ref: '#/components/schemas/PaymentStatus'
-        amount:
-          $ref: '#/components/schemas/Money'
-        currency:
-          $ref: '#/components/schemas/Currency'
-        confirmation:
-          oneOf:
-          - $ref: '#/components/schemas/PaymentConfirmation'
-          - type: 'null'
-        failure_message:
-          type:
-          - string
-          - 'null'
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    PaymentStatus:
-      type: string
-      enum:
-      - pending
-      - authorized
-      - succeeded
-      - failed
-      - cancelled
-      - refunded
-    Money:
-      type: string
-      pattern: ^[0-9]+\.[0-9]{2}$
-      examples:
-      - '1490.00'
-      description: Decimal amount in major currency units; never a JSON floating-point number.
-    Currency:
-      type: string
-      const: RUB
+      title: CreateTBankPaymentRequest
     ApiError:
       type: object
       required:
@@ -2200,41 +2433,446 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ValidationErrorItem'
+    CustomerRequest:
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        email:
+          type: string
+          maxLength: 320
+          format: email
+          title: Email
+        phone:
+          type: string
+          maxLength: 32
+          minLength: 1
+          title: Phone
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      - email
+      - phone
+      title: CustomerRequest
+    CustomerResponse:
+      properties:
+        name:
+          type: string
+          title: Name
+        email:
+          type: string
+          format: email
+          title: Email
+        phone:
+          type: string
+          title: Phone
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      - email
+      - phone
+      title: CustomerResponse
+    OrderItemResponse:
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          title: Product Id
+        title:
+          type: string
+          title: Title
+        quantity:
+          type: integer
+          title: Quantity
+        unit_price:
+          type: string
+          title: Unit Price
+        total:
+          type: string
+          title: Total
+      additionalProperties: false
+      type: object
+      required:
+      - product_id
+      - title
+      - quantity
+      - unit_price
+      - total
+      title: OrderItemResponse
+    OrderResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        status:
+          type: string
+          title: Status
+        items:
+          items:
+            $ref: '#/components/schemas/OrderItemResponse'
+          type: array
+          title: Items
+        total:
+          type: string
+          title: Total
+        currency:
+          type: string
+          title: Currency
+        customer:
+          $ref: '#/components/schemas/CustomerResponse'
+        comment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Comment
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - status
+      - items
+      - total
+      - currency
+      - customer
+      - comment
+      - created_at
+      - updated_at
+      title: OrderResponse
+    PaymentConfirmationResponse:
+      properties:
+        type:
+          type: string
+          enum:
+          - redirect
+          - qr
+          title: Type
+        url:
+          type: string
+          title: Url
+      additionalProperties: false
+      type: object
+      required:
+      - type
+      - url
+      title: PaymentConfirmationResponse
+    PaymentResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        order_id:
+          type: string
+          format: uuid
+          title: Order Id
+        provider:
+          type: string
+          title: Provider
+        payment_option_id:
+          type: string
+          title: Payment Option Id
+        status:
+          type: string
+          title: Status
+        amount:
+          type: string
+          title: Amount
+        currency:
+          type: string
+          title: Currency
+        confirmation:
+          anyOf:
+          - $ref: '#/components/schemas/PaymentConfirmationResponse'
+          - type: 'null'
+        failure_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Failure Message
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - order_id
+      - provider
+      - payment_option_id
+      - status
+      - amount
+      - currency
+      - confirmation
+      - failure_message
+      - created_at
+      - updated_at
+      title: PaymentResponse
+    TBankPaymentOptionResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        kind:
+          type: string
+          enum:
+          - card
+          - sbp
+          title: Kind
+        enabled:
+          type: boolean
+          title: Enabled
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - title
+      - kind
+      - enabled
+      title: TBankPaymentOptionResponse
+    AuditLogResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        admin_name:
+          type: string
+          title: Admin Name
+        admin_email:
+          type: string
+          format: email
+          title: Admin Email
+        action:
+          type: string
+          title: Action
+        entity_type:
+          type: string
+          title: Entity Type
+        entity_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Entity Id
+        details:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Details
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        ip_address:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ip Address
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - admin_name
+      - admin_email
+      - action
+      - entity_type
+      - entity_id
+      - details
+      - created_at
+      title: AuditLogResponse
+    AuditLoggingSetting:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+      additionalProperties: false
+      type: object
+      required:
+      - enabled
+      title: AuditLoggingSetting
+    CrmOrderResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        customer_name:
+          type: string
+          title: Customer Name
+        customer_email:
+          type: string
+          format: email
+          title: Customer Email
+        total:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Total
+        status:
+          $ref: '#/components/schemas/CrmStatus'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - customer_name
+      - customer_email
+      - total
+      - status
+      - created_at
+      title: CrmOrderResponse
+    CrmOrderUpdateRequest:
+      properties:
+        status:
+          $ref: '#/components/schemas/CrmStatus'
+      additionalProperties: false
+      type: object
+      required:
+      - status
+      title: CrmOrderUpdateRequest
+    CrmStatus:
+      type: string
+      enum:
+      - payment_verification
+      - assembling
+      - ready_to_ship
+      - in_transit
+      - awaiting_pickup
+      - received
+      - closed
+    TagCreateRequest:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+        slug:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Slug
+        description:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Description
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      - slug
+      title: TagCreateRequest
+    TagResponse:
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          title: Uuid
+        name:
+          type: string
+          title: Name
+        slug:
+          type: string
+          title: Slug
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      additionalProperties: false
+      type: object
+      required:
+      - uuid
+      - name
+      - slug
+      - description
+      - created_at
+      - updated_at
+      title: TagResponse
+    TagSummary:
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          title: Uuid
+        name:
+          type: string
+          title: Name
+        slug:
+          type: string
+          title: Slug
+      additionalProperties: false
+      type: object
+      required:
+      - uuid
+      - name
+      - slug
+      title: TagSummary
+    TagUpdateRequest:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Name
+        slug:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Slug
+        description:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Description
+      additionalProperties: false
+      type: object
+      title: TagUpdateRequest
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-  parameters:
-    OrderId:
-      name: order_id
-      in: path
-      required: true
-      description: Market Backend order UUID
-      schema:
-        type: string
-        format: uuid
   responses:
-    BadRequest:
-      description: Business validation failed
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
     Unauthorized:
       description: Authentication failed or access token is invalid
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-    Forbidden:
-      description: The authenticated user cannot access this resource
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-    NotFound:
-      description: Resource not found
       content:
         application/json:
           schema:
@@ -2251,12 +2889,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/HttpValidationError'
-    ProviderUnavailable:
-      description: T-Bank rejected the request or is temporarily unavailable
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
 servers:
 - url: /
   description: Current origin

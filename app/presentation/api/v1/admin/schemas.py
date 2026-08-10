@@ -1,10 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 from uuid import UUID
 
 from pydantic import ConfigDict, EmailStr, Field, model_validator
 
+from app.domain.orders.models import CrmStatus, Order
 from app.domain.users.models import UserRole
 from app.models import ApiModel, ApiResponseModel
 
@@ -83,13 +83,34 @@ class AdminUserResponse(ApiResponseModel):
     updated_at: datetime
 
 
+class TagSummary(ApiResponseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    uuid: UUID = Field(validation_alias="id")
+    name: str
+    slug: str
+
+
+class TagResponse(TagSummary):
+    description: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class TagCreateRequest(ApiModel):
+    name: str = Field(min_length=1, max_length=100)
+    slug: str = Field(min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=2000)
+
+
+class TagUpdateRequest(ApiModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    slug: str | None = Field(default=None, min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=2000)
+
+
 class ProductRequest(ApiModel):
-    @model_validator(mode="before")
-    @classmethod
-    def ignore_unimplemented_tag_fields(cls, data: Any) -> Any:
-        if not isinstance(data, dict):
-            return data
-        return {key: value for key, value in data.items() if key not in {"tag_ids", "tags_ids"}}
+    pass
 
 
 class ProductCreateRequest(ProductRequest):
@@ -100,6 +121,7 @@ class ProductCreateRequest(ProductRequest):
     price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     ozon_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     wb_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    tag_ids: list[UUID] = Field(default_factory=list, max_length=100)
 
 
 class ProductUpdateRequest(ProductRequest):
@@ -110,6 +132,7 @@ class ProductUpdateRequest(ProductRequest):
     price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     ozon_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     wb_price: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    tag_ids: list[UUID] | None = Field(default=None, max_length=100)
 
 
 class ProductResponse(ApiResponseModel):
@@ -123,7 +146,48 @@ class ProductResponse(ApiResponseModel):
     price: Decimal | None
     ozon_price: Decimal | None
     wb_price: Decimal | None
+    tags: list[TagSummary]
     created_by: UUID
     updated_by: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class CrmOrderResponse(ApiResponseModel):
+    id: UUID
+    customer_name: str
+    customer_email: EmailStr
+    total: Decimal
+    status: CrmStatus
+    created_at: datetime
+
+    @classmethod
+    def from_domain(cls, order: Order) -> "CrmOrderResponse":
+        return cls(
+            id=order.id,
+            customer_name=order.customer.name,
+            customer_email=order.customer.email,
+            total=order.total,
+            status=order.crm_status,
+            created_at=order.created_at,
+        )
+
+
+class CrmOrderUpdateRequest(ApiModel):
+    status: CrmStatus
+
+
+class AuditLogResponse(ApiResponseModel):
+    id: UUID
+    admin_name: str
+    admin_email: EmailStr
+    action: str
+    entity_type: str
+    entity_id: str | None
+    details: str | None
+    created_at: datetime
+    ip_address: str | None = None
+
+
+class AuditLoggingSetting(ApiModel):
+    enabled: bool

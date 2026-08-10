@@ -9,15 +9,10 @@ from app.main import create_app
 
 OPENAPI_PATH = Path(__file__).parents[1] / "openapi" / "openapi.yaml"
 HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
+# Contract-first operations that the FastAPI application does not expose yet. Checkout and the
+# T-Bank endpoints graduated to `implemented`; Google sign-in is still awaiting API review.
 PLANNED_OPERATIONS = {
     ("/api/v1/auth/google", "post"),
-    ("/api/v1/payments/tbank/options", "get"),
-    ("/api/v1/orders", "post"),
-    ("/api/v1/orders/{order_id}", "get"),
-    ("/api/v1/orders/{order_id}/payments/tbank", "post"),
-    ("/api/v1/orders/{order_id}/payment", "get"),
-    ("/api/v1/orders/{order_id}/payment/cancel", "post"),
-    ("/api/v1/payments/tbank/webhook", "post"),
 }
 
 
